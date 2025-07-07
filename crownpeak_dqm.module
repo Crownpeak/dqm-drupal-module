@@ -1,0 +1,57 @@
+<?php
+/**
+ * @file
+ * Crownpeak DQM module file.
+ */
+
+/**
+ * Implements hook_toolbar().
+ */
+function crownpeak_dqm_toolbar() {
+  $items = [];
+  if (\Drupal::currentUser()->hasPermission('administer crownpeak dqm')) {
+    $items['crownpeak_dqm'] = [
+      '#type' => 'toolbar_item',
+      'tab' => [
+        '#type' => 'link',
+        '#title' => t('Crownpeak DQM'),
+        '#url' => \Drupal\Core\Url::fromRoute('<current>'),
+        '#attributes' => [
+          'class' => ['toolbar-icon', 'toolbar-icon-crownpeak-dqm', 'trigger', 'toolbar-item'],
+          'id' => 'toolbar-item-crownpeak-dqm',
+          'data-toolbar-tray' => 'toolbar-item-crownpeak-dqm-tray',
+          'role' => 'button',
+          'aria-pressed' => 'false',
+        ],
+      ],
+      'tray' => [
+        '#type' => 'container',
+        '#attributes' => [
+          'id' => 'toolbar-item-crownpeak-dqm-tray',
+          'class' => ['toolbar-tray', 'toolbar-tray-vertical'],
+          'data-toolbar-tray' => 'toolbar-item-crownpeak-dqm-tray',
+        ],
+        'content' => [
+          '#type' => 'container',
+          '#attributes' => ['class' => ['crownpeak-dqm-toolbar-tray']],
+          'run_quality_check' => [
+            '#type' => 'button',
+            '#value' => t('Run Quality Check'),
+            '#attributes' => [
+              'class' => ['crownpeak-dqm-run-quality-check'],
+            ],
+          ],
+        ],
+      ],
+      '#weight' => 100,
+    ];
+  }
+  return $items;
+}
+
+/**
+ * Implements hook_page_attachments().
+ */
+function crownpeak_dqm_page_attachments(array &$attachments) {
+  $attachments['#attached']['library'][] = 'crownpeak_dqm/toolbar';
+} 

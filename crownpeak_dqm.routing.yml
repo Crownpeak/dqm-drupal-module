@@ -1,0 +1,31 @@
+crownpeak_dqm.settings:  
+  path: '/admin/config/content/crownpeak-dqm'  
+  defaults:  
+    _form: '\Drupal\crownpeak_dqm\Form\SettingsForm'  
+    _title: 'Crownpeak DQM Settings'  
+  requirements:  
+    _permission: 'administer crownpeak dqm'  
+
+crownpeak_dqm.toolbar_tray:
+  path: '/admin/crownpeak-dqm/tray'
+  defaults:
+    _controller: '\Drupal\crownpeak_dqm\Controller\ToolbarTrayController::tray'
+    _title: 'Crownpeak DQM'
+  requirements:
+    _permission: 'administer crownpeak dqm'  
+
+crownpeak_dqm.scan:
+  path: '/crownpeak-dqm/scan'
+  defaults:
+    _controller: '\Drupal\crownpeak_dqm\Controller\ScanController::scan'
+  requirements:
+    _permission: 'administer crownpeak dqm'
+  methods: [POST]
+
+crownpeak_dqm.results:
+  path: '/crownpeak-dqm/results/{assetId}'
+  defaults:
+    _controller: '\Drupal\crownpeak_dqm\Controller\ScanController::getResults'
+  requirements:
+    _permission: 'administer crownpeak dqm'
+  methods: [GET]
