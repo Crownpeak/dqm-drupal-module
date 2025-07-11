@@ -39,8 +39,41 @@ class SettingsForm extends ConfigFormBase {
       '#required' => TRUE,  
       '#description' => $this->t('Your DQM Website ID. If you are unsure what this is, please contact support@crownpeak.com.'),  
       '#placeholder' => $this->t('Enter your Website ID'),
-    ];  
-    return parent::buildForm($form, $form_state);  
+    ];
+    
+    $form['#attached']['html_head'][] = [
+      [
+        '#tag' => 'style',
+        '#value' => '
+          .form-submit.crownpeak-dqm-save-button {
+            background: #b604d4 !important;
+            border-color: #b604d4 !important;
+            color: white !important;
+            padding: 12px 24px !important;
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            border-radius: 4px !important;
+            transition: all 0.2s ease !important;
+            text-decoration: none !important;
+            cursor: pointer !important;
+            border: 1px solid transparent !important;
+          }
+          .form-submit.crownpeak-dqm-save-button:hover {
+            background: #9a039d !important;
+            border-color: #9a039d !important;
+          }
+        ',
+      ],
+      'crownpeak-dqm-settings-style'
+    ];
+    
+    $form = parent::buildForm($form, $form_state);
+
+    if (isset($form['actions']['submit'])) {
+      $form['actions']['submit']['#attributes']['class'][] = 'crownpeak-dqm-save-button';
+    }
+    
+    return $form;
   }  
 
   public function submitForm(array &$form, FormStateInterface $form_state) {  
