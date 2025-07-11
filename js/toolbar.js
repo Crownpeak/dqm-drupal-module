@@ -264,11 +264,21 @@
       html += '</div>';
       html += '</div>';
     }
-    
-    // Add a second "Run Quality Check" button after the failed checkpoints
     html += '<button class="crownpeak-dqm-run-quality-check-secondary button">Run Quality Check</button>';
     
     container.innerHTML = html;
+    var pieChart = container.querySelector('.dqm-pie-chart');
+    if (pieChart) {
+      var percentage = parseInt(pieChart.getAttribute('data-percent') || '0');
+      var passedDegrees = Math.round((percentage / 100) * 360);
+      var failedDegrees = 360 - passedDegrees;
+      
+      if (passedDegrees > 0) {
+        pieChart.style.background = 'conic-gradient(#b604d4 0deg ' + passedDegrees + 'deg, #303747 ' + passedDegrees + 'deg 360deg)';
+      } else {
+        pieChart.style.background = '#303747';
+      }
+    }
     
     var modal = document.getElementById('dqm-checkpoint-modal');
     if (!modal) {

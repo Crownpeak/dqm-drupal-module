@@ -65,7 +65,7 @@ input.crownpeak-dqm-run-quality-check-secondary.button,
   height: 120px;
   border-radius: 50%;
   position: relative;
-  background: conic-gradient(#b604d4 0deg 0deg, #303747 0deg 360deg);
+  background: #303747;
 }
 
 .dqm-pie-chart .percent-label {
