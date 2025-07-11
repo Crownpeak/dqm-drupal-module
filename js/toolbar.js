@@ -1,23 +1,21 @@
 (function ($, Drupal, once) {
   Drupal.behaviors.crownpeakDqmToolbar = {
     attach: function (context, settings) {
-      once('crownpeak-dqm', '.crownpeak-dqm-run-quality-check', context).forEach(function (el) {
-        $(el).on('click', function () {
+      if (!$(document).data('crownpeak-dqm-events-bound')) {
+        $(document).on('click', '.crownpeak-dqm-run-quality-check', function() {
           runQualityCheck(this, 'content');
         });
-      });
-      
-      once('crownpeak-dqm-secondary', '.crownpeak-dqm-run-quality-check-secondary', context).forEach(function (el) {
-        $(el).on('click', function () {
+        
+        $(document).on('click', '.crownpeak-dqm-run-quality-check-secondary', function() {
           runQualityCheck(this, 'content');
         });
-      });
-      
-      once('crownpeak-dqm-url', '.crownpeak-dqm-scan-url', context).forEach(function (el) {
-        $(el).on('click', function () {
+        
+        $(document).on('click', '.crownpeak-dqm-scan-url', function() {
           runQualityCheck(this, 'url');
         });
-      });
+        
+        $(document).data('crownpeak-dqm-events-bound', true);
+      }
     }
   };
 
