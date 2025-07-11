@@ -237,11 +237,47 @@
     }
     
     if (failedCheckpoints.length > 0) {
+      var uniqueTopics = [];
+      failedCheckpoints.forEach(function (checkpoint) {
+        if (Array.isArray(checkpoint.topics)) {
+          checkpoint.topics.forEach(function(topic) {
+            if (uniqueTopics.indexOf(topic) === -1) {
+              uniqueTopics.push(topic);
+            }
+          });
+        }
+      });
+      
       html += '<div class="dqm-card">';
       html += '<h3>❌ Failed Checkpoints (' + failedCheckpoints.length + ')</h3>';
-      html += '<div class="dqm-checkpoints-list">';
+      
+      if (uniqueTopics.length > 1) {
+        html += '<div class="dqm-filter-container">';
+        html += '<select class="dqm-topics-filter" id="dqm-topics-filter">';
+        html += '<option value="all">All Topics (' + failedCheckpoints.length + ')</option>';
+        uniqueTopics.sort().forEach(function(topic) {
+          var count = 0;
+          failedCheckpoints.forEach(function(checkpoint) {
+            if (Array.isArray(checkpoint.topics) && checkpoint.topics.indexOf(topic) !== -1) {
+              count++;
+            }
+          });
+          html += '<option value="' + topic.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '">' + topic + ' (' + count + ')</option>';
+        });
+        html += '</select>';
+        html += '</div>';
+      }
+      
+      html += '<div class="dqm-checkpoints-list" id="dqm-checkpoints-list">';
       failedCheckpoints.forEach(function (checkpoint, idx) {
-        html += '<div class="dqm-checkpoint-item">';
+        var topicClasses = '';
+        if (Array.isArray(checkpoint.topics)) {
+          topicClasses = checkpoint.topics.map(function(topic) {
+            return 'topic-' + topic.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+          }).join(' ');
+        }
+        
+        html += '<div class="dqm-checkpoint-item ' + topicClasses + '" data-topics="' + (Array.isArray(checkpoint.topics) ? checkpoint.topics.join(',') : '') + '">';
         html += '<div class="checkpoint-icon-title-row">';
         html += '<div class="checkpoint-icon failed dqm-info-icon" data-idx="' + idx + '" style="cursor:pointer;">!</div>';
         html += '<div>';
@@ -343,6 +379,42 @@
     modal.addEventListener('mouseleave', function() {
       modal.style.display = 'none';
     });
+    
+    var filterSelect = container.querySelector('#dqm-topics-filter');
+    if (filterSelect) {
+      filterSelect.addEventListener('change', function(e) {
+        var selectedTopic = e.target.value;
+        var checkpointItems = container.querySelectorAll('.dqm-checkpoint-item');
+        var visibleCount = 0;
+        
+        checkpointItems.forEach(function(item) {
+          if (selectedTopic === 'all') {
+            item.style.display = 'flex';
+            visibleCount++;
+          } else {
+            var itemTopics = item.getAttribute('data-topics') || '';
+            var topicArray = itemTopics.split(',').map(function(topic) {
+              return topic.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            });
+            
+            if (topicArray.indexOf(selectedTopic) !== -1) {
+              item.style.display = 'flex';
+              visibleCount++;
+            } else {
+              item.style.display = 'none';
+            }
+          }
+        });
+        
+        var cardTitle = container.querySelector('.dqm-card h3');
+        if (cardTitle && selectedTopic !== 'all') {
+          var selectedTopicName = e.target.options[e.target.selectedIndex].text.split(' (')[0];
+          cardTitle.textContent = '❌ Failed Checkpoints - ' + selectedTopicName + ' (' + visibleCount + ')';
+        } else if (cardTitle) {
+          cardTitle.textContent = '❌ Failed Checkpoints (' + failedCheckpoints.length + ')';
+        }
+      });
+    }
   }
 
   function extractPreviewContent() {
