@@ -37,11 +37,3 @@ crownpeak_dqm.results:
   requirements:
     _permission: 'administer crownpeak dqm'
   methods: [GET]
-
-crownpeak_dqm.clear_logs:
-  path: '/admin/config/content/crownpeak-dqm/clear-logs'
-  defaults:
-    _controller: '\Drupal\crownpeak_dqm\Controller\ScanController::clearDebugLogs'
-    _title: 'Clear Debug Logs'
-  requirements:
-    _permission: 'administer crownpeak dqm'

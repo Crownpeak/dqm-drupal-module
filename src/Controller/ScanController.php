@@ -6,13 +6,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
 class ScanController extends ControllerBase {
-  private function debugLog($msg) {
-    $logfile = DRUPAL_ROOT . '/modules/custom/dqm-drupal-module/crownpeak_dqm_debug.log';
-    if (is_array($msg) || is_object($msg)) {
-      $msg = print_r($msg, true);
-    }
-    file_put_contents($logfile, date('c') . ' ' . $msg . "\n", FILE_APPEND);
-  }
 
   public function scan(Request $request) {
     $logger = \Drupal::logger('crownpeak_dqm');
@@ -194,15 +187,6 @@ class ScanController extends ControllerBase {
       $logger->error('Exception during results fetch: @msg', ['@msg' => $e->getMessage()]);
       return new JsonResponse(['success' => false, 'message' => $e->getMessage()]);
     }
-  }
-
-  /**
-   * Clear debug logs.
-   */
-  public function clearDebugLogs() {
-    $message = crownpeak_dqm_clear_debug_logs();
-    \Drupal::messenger()->addStatus($message);
-    return $this->redirect('crownpeak_dqm.debug_logs');
   }
 
   /**

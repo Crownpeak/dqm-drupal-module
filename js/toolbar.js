@@ -165,7 +165,6 @@
         failedCheckpoints.push(checkpoint);
       } else {
         passedCount++;
-        console.log('DQM Debug: Added to passed count');
       }
       
       if (checkpoint.topics && Array.isArray(checkpoint.topics)) {
