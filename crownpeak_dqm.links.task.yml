@@ -1,0 +1,5 @@
+crownpeak_dqm.settings:
+  route_name: crownpeak_dqm.settings
+  title: 'Configure Crownpeak DQM'
+  description: 'Configure API credentials and settings for Crownpeak Digital Quality Management.'
+  base_route: crownpeak_dqm.settings

@@ -2,7 +2,7 @@ crownpeak_dqm.settings:
   path: '/admin/config/content/crownpeak-dqm'  
   defaults:  
     _form: '\Drupal\crownpeak_dqm\Form\SettingsForm'  
-    _title: 'Crownpeak DQM Settings'  
+    _title: 'Crownpeak Digital Quality & Accessibility Management'  
   requirements:  
     _permission: 'administer crownpeak dqm'  
 
@@ -22,6 +22,14 @@ crownpeak_dqm.scan:
     _permission: 'administer crownpeak dqm'
   methods: [POST]
 
+crownpeak_dqm.scan_from_url:
+  path: '/crownpeak-dqm/scan-from-url'
+  defaults:
+    _controller: '\Drupal\crownpeak_dqm\Controller\ScanController::scanFromUrl'
+  requirements:
+    _permission: 'administer crownpeak dqm'
+  methods: [POST]
+
 crownpeak_dqm.results:
   path: '/crownpeak-dqm/results/{assetId}'
   defaults:
@@ -29,3 +37,11 @@ crownpeak_dqm.results:
   requirements:
     _permission: 'administer crownpeak dqm'
   methods: [GET]
+
+crownpeak_dqm.clear_logs:
+  path: '/admin/config/content/crownpeak-dqm/clear-logs'
+  defaults:
+    _controller: '\Drupal\crownpeak_dqm\Controller\ScanController::clearDebugLogs'
+    _title: 'Clear Debug Logs'
+  requirements:
+    _permission: 'administer crownpeak dqm'

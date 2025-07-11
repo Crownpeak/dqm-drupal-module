@@ -9,7 +9,8 @@
  */
 function crownpeak_dqm_toolbar() {
   $items = [];
-  if (\Drupal::currentUser()->hasPermission('administer crownpeak dqm')) {
+
+  if (\Drupal::currentUser()->hasPermission('administer crownpeak dqm') && _crownpeak_dqm_should_show_toolbar()) {
     $items['crownpeak_dqm'] = [
       '#type' => 'toolbar_item',
       'tab' => [
@@ -17,7 +18,7 @@ function crownpeak_dqm_toolbar() {
         '#title' => t('Crownpeak DQM'),
         '#url' => \Drupal\Core\Url::fromRoute('<current>'),
         '#attributes' => [
-          'class' => ['toolbar-icon', 'toolbar-icon-crownpeak-dqm', 'trigger', 'toolbar-item'],
+          'class' => ['trigger', 'toolbar-item'],
           'id' => 'toolbar-item-crownpeak-dqm',
           'data-toolbar-tray' => 'toolbar-item-crownpeak-dqm-tray',
           'role' => 'button',
@@ -53,5 +54,82 @@ function crownpeak_dqm_toolbar() {
  * Implements hook_page_attachments().
  */
 function crownpeak_dqm_page_attachments(array &$attachments) {
-  $attachments['#attached']['library'][] = 'crownpeak_dqm/toolbar';
-} 
+  if (\Drupal::currentUser()->hasPermission('administer crownpeak dqm') && _crownpeak_dqm_should_show_toolbar()) {
+    $attachments['#attached']['library'][] = 'crownpeak_dqm/toolbar';
+  }
+}
+
+/**
+ * Helper function to determine if the toolbar should be shown.
+ * 
+ * @return bool
+ *   TRUE if the toolbar should be shown, FALSE otherwise.
+ */
+function _crownpeak_dqm_should_show_toolbar() {
+  $route_match = \Drupal::routeMatch();
+  $current_route = $route_match->getRouteName();
+  $current_path = \Drupal::service('path.current')->getPath();
+  
+  // Don't show on admin pages
+  if (strpos($current_path, '/admin') === 0) {
+    return FALSE;
+  }
+  
+  // Don't show on user pages
+  if (strpos($current_path, '/user') === 0) {
+    return FALSE;
+  }
+  
+  // Don't show on system pages like batch, cron, etc.
+  $system_routes = [
+    'system.batch_page.html',
+    'system.batch_page.json',
+    'system.cron',
+    'system.db_update',
+    'update.status',
+    'update.module_update',
+    'update.theme_update',
+  ];
+  
+  if (in_array($current_route, $system_routes)) {
+    return FALSE;
+  }
+  
+  // Show on node pages (view, edit, add)
+  if ($current_route && (
+    strpos($current_route, 'entity.node.') === 0 ||
+    strpos($current_route, 'node.') === 0 ||
+    $current_route === 'node.add' ||
+    $current_route === 'node.add_page'
+  )) {
+    return TRUE;
+  }
+  
+  // Show on taxonomy term pages
+  if ($current_route && strpos($current_route, 'entity.taxonomy_term.') === 0) {
+    return TRUE;
+  }
+  
+  // Show on front page and other public content pages
+  if ($current_route === 'view.frontpage.page_1' || 
+      $current_route === '<front>' || 
+      $current_route === 'system.404' ||
+      $current_route === 'system.403') {
+    return TRUE;
+  }
+  
+  // Check if we're viewing a node directly (for custom or contributed module routes)
+  $node = $route_match->getParameter('node');
+  if ($node && $node instanceof \Drupal\node\NodeInterface) {
+    return TRUE;
+  }
+  
+  // Check if we're on a page that displays content (views pages, etc.)
+  // Show on custom content pages that aren't admin pages
+  if (!preg_match('/^(admin|user|batch|cron|update|install|core)/', $current_path) && 
+      !preg_match('/\.(css|js|ico|png|jpg|jpeg|gif|svg)$/', $current_path)) {
+    return TRUE;
+  }
+  
+  return FALSE;
+}
