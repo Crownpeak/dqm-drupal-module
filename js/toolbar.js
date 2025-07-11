@@ -7,6 +7,12 @@
         });
       });
       
+      once('crownpeak-dqm-secondary', '.crownpeak-dqm-run-quality-check-secondary', context).forEach(function (el) {
+        $(el).on('click', function () {
+          runQualityCheck(this, 'content');
+        });
+      });
+      
       once('crownpeak-dqm-url', '.crownpeak-dqm-scan-url', context).forEach(function (el) {
         $(el).on('click', function () {
           runQualityCheck(this, 'url');
@@ -155,10 +161,11 @@
     var topicCounts = {};
 
     checkpoints.forEach(function (checkpoint) {
-      if (checkpoint.status === 'passed') {
-        passedCount++;
-      } else {
+      if (checkpoint.failed === true) {
         failedCheckpoints.push(checkpoint);
+      } else {
+        passedCount++;
+        console.log('DQM Debug: Added to passed count');
       }
       
       if (checkpoint.topics && Array.isArray(checkpoint.topics)) {
@@ -167,7 +174,7 @@
             topicCounts[topic] = { total: 0, passed: 0 };
           }
           topicCounts[topic].total++;
-          if (checkpoint.status === 'passed') {
+          if (checkpoint.failed !== true) {
             topicCounts[topic].passed++;
           }
         });
@@ -239,7 +246,6 @@
       failedCheckpoints.forEach(function (checkpoint, idx) {
         html += '<div class="dqm-checkpoint-item">';
         html += '<div class="checkpoint-icon-title-row">';
-        // Use a red circle with exclamation mark, matching WordPress
         html += '<div class="checkpoint-icon failed dqm-info-icon" data-idx="' + idx + '" style="cursor:pointer;">!</div>';
         html += '<div>';
         html += '<span class="checkpoint-title">' + (checkpoint.name || 'Unknown Checkpoint') + '</span>';
@@ -259,9 +265,11 @@
       html += '</div>';
     }
     
+    // Add a second "Run Quality Check" button after the failed checkpoints
+    html += '<button class="crownpeak-dqm-run-quality-check-secondary button">Run Quality Check</button>';
+    
     container.innerHTML = html;
     
-    // Modal logic for info icon
     var modal = document.getElementById('dqm-checkpoint-modal');
     if (!modal) {
       modal = document.createElement('div');
@@ -305,7 +313,6 @@
       }
       modal.style.display = 'block';
       modal.style.opacity = '1';
-      // Always position modal at top right
       modal.style.top = '32px';
       modal.style.left = '32px';
       modal.style.right = '';

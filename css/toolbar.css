@@ -5,7 +5,9 @@
 }
 
 input.crownpeak-dqm-run-quality-check.button,
-.crownpeak-dqm-run-quality-check.button {
+.crownpeak-dqm-run-quality-check.button,
+input.crownpeak-dqm-run-quality-check-secondary.button,
+.crownpeak-dqm-run-quality-check-secondary.button{
   background: #b604d4 !important;
   border-color: #b604d4 !important;
   color: white !important;
@@ -15,10 +17,15 @@ input.crownpeak-dqm-run-quality-check.button,
   border-radius: 4px !important;
   transition: all 0.2s ease;
   text-decoration: none !important;
-  display: inline-block !important;
+  display: block !important;
   cursor: pointer !important;
   border: 1px solid transparent !important;
-  margin: 20px;
+  margin: 20px auto 20px auto !important;
+  width: calc(100% - 40px) !important;
+  max-width: none !important;
+  min-width: none !important;
+  box-sizing: border-box !important;
+  text-align: center !important;
 }
 
 .crownpeak-dqm-toolbar-tray {
@@ -198,6 +205,7 @@ input.crownpeak-dqm-run-quality-check.button,
 .dqm-checkpoint-item .checkpoint-icon-title-row {
   display: flex;
   align-items: center;
+  gap: 10px;
 }
 
 .checkpoint-title b {
@@ -265,4 +273,8 @@ input.crownpeak-dqm-run-quality-check.button,
   display: flex;
   gap: 6px;
   margin-top: 4px;
+}
+
+.dqm-results-container {
+  padding-bottom: 30px !important;
 }

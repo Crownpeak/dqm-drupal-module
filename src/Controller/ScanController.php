@@ -7,7 +7,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 
 class ScanController extends ControllerBase {
   private function debugLog($msg) {
-    $logfile = DRUPAL_ROOT . '/modules/custom/crownpeak_dqm/crownpeak_dqm_debug.log';
+    $logfile = DRUPAL_ROOT . '/modules/custom/dqm-drupal-module/crownpeak_dqm_debug.log';
     if (is_array($msg) || is_object($msg)) {
       $msg = print_r($msg, true);
     }

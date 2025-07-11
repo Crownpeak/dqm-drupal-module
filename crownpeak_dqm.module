@@ -70,17 +70,14 @@ function _crownpeak_dqm_should_show_toolbar() {
   $current_route = $route_match->getRouteName();
   $current_path = \Drupal::service('path.current')->getPath();
   
-  // Don't show on admin pages
   if (strpos($current_path, '/admin') === 0) {
     return FALSE;
   }
   
-  // Don't show on user pages
   if (strpos($current_path, '/user') === 0) {
     return FALSE;
   }
   
-  // Don't show on system pages like batch, cron, etc.
   $system_routes = [
     'system.batch_page.html',
     'system.batch_page.json',
@@ -95,7 +92,6 @@ function _crownpeak_dqm_should_show_toolbar() {
     return FALSE;
   }
   
-  // Show on node pages (view, edit, add)
   if ($current_route && (
     strpos($current_route, 'entity.node.') === 0 ||
     strpos($current_route, 'node.') === 0 ||
@@ -105,12 +101,10 @@ function _crownpeak_dqm_should_show_toolbar() {
     return TRUE;
   }
   
-  // Show on taxonomy term pages
   if ($current_route && strpos($current_route, 'entity.taxonomy_term.') === 0) {
     return TRUE;
   }
   
-  // Show on front page and other public content pages
   if ($current_route === 'view.frontpage.page_1' || 
       $current_route === '<front>' || 
       $current_route === 'system.404' ||
@@ -118,14 +112,11 @@ function _crownpeak_dqm_should_show_toolbar() {
     return TRUE;
   }
   
-  // Check if we're viewing a node directly (for custom or contributed module routes)
   $node = $route_match->getParameter('node');
   if ($node && $node instanceof \Drupal\node\NodeInterface) {
     return TRUE;
   }
   
-  // Check if we're on a page that displays content (views pages, etc.)
-  // Show on custom content pages that aren't admin pages
   if (!preg_match('/^(admin|user|batch|cron|update|install|core)/', $current_path) && 
       !preg_match('/\.(css|js|ico|png|jpg|jpeg|gif|svg)$/', $current_path)) {
     return TRUE;
