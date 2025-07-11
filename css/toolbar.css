@@ -28,6 +28,22 @@ input.crownpeak-dqm-run-quality-check-secondary.button,
   text-align: center !important;
 }
 
+input.crownpeak-dqm-run-quality-check.button:disabled,
+.crownpeak-dqm-run-quality-check.button:disabled,
+input.crownpeak-dqm-run-quality-check-secondary.button:disabled,
+.crownpeak-dqm-run-quality-check-secondary.button:disabled,
+input.crownpeak-dqm-run-quality-check.button.loading,
+.crownpeak-dqm-run-quality-check.button.loading,
+input.crownpeak-dqm-run-quality-check-secondary.button.loading,
+.crownpeak-dqm-run-quality-check-secondary.button.loading {
+  background: #cccccc !important;
+  border-color: #cccccc !important;
+  color: #666666 !important;
+  cursor: not-allowed !important;
+  opacity: 0.6 !important;
+  pointer-events: none !important;
+}
+
 .crownpeak-dqm-toolbar-tray {
   justify-content: center;
   display: flex;

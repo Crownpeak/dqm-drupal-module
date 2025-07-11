@@ -24,6 +24,16 @@
       return;
     }
     $(buttonElement).data('submitting', true);
+    $(buttonElement).addClass('loading');
+    $(buttonElement).prop('disabled', true);
+    var originalText = $(buttonElement).val() || $(buttonElement).text();
+    $(buttonElement).data('original-text', originalText);
+    var loadingText = 'Running Quality Check...';
+    if ($(buttonElement).is('input')) {
+      $(buttonElement).val(loadingText);
+    } else {
+      $(buttonElement).text(loadingText);
+    }
     
     if (method === 'url') {
       runUrlBasedScan(buttonElement);
@@ -72,7 +82,7 @@
       content = extractRegularPageContent();
     }
     if (!content) {
-      $(buttonElement).data('submitting', false);
+      resetButtonState(buttonElement);
       return;
     }
     
@@ -104,18 +114,33 @@
   }
 
   function handleScanResponse(data, buttonElement, assetKey) {
-    $(buttonElement).data('submitting', false);
     if (data.success) {
       localStorage.setItem(assetKey, data.assetId);
       fetchQualityResults(data.assetId, buttonElement);
     } else {
+      resetButtonState(buttonElement);
       alert('Scan failed: ' + (data.message || 'Unknown error'));
     }
   }
 
   function handleScanError(xhr, status, error, buttonElement) {
-    $(buttonElement).data('submitting', false);
+    resetButtonState(buttonElement);
     alert('AJAX error: ' + error);
+  }
+  
+  function resetButtonState(buttonElement) {
+    $(buttonElement).data('submitting', false);
+    $(buttonElement).removeClass('loading');
+    $(buttonElement).prop('disabled', false);
+    
+    var originalText = $(buttonElement).data('original-text');
+    if (originalText) {
+      if ($(buttonElement).is('input')) {
+        $(buttonElement).val(originalText);
+      } else {
+        $(buttonElement).text(originalText);
+      }
+    }
   }
   
   function fetchQualityResults(assetId, buttonElement) {
@@ -134,6 +159,7 @@
       method: 'GET',
       dataType: 'json',
       success: function (response) {
+        resetButtonState(buttonElement);
         if (response.success && response.data) {
           displayQualityResults(response.data, resultsContainer);
         } else {
@@ -141,6 +167,7 @@
         }
       },
       error: function (xhr, status, error) {
+        resetButtonState(buttonElement);
         resultsContainer.innerHTML = '<div class="dqm-card"><p>Error loading quality results: ' + error + '</p></div>';
       }
     });
