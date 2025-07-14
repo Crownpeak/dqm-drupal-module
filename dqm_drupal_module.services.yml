@@ -1,4 +1,7 @@
 services:
+  dqm_drupal_module.scan_service:
+    class: 'Drupal\dqm_drupal_module\Service\ScanService'
+    arguments: []
   dqm_drupal_module.toolbar_tray_service:
     class: Drupal\dqm_drupal_module\Service\ToolbarTrayService
     arguments: ['@request_stack', '@string_translation']
