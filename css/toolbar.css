@@ -44,6 +44,15 @@ input.dqm-drupal-module-run-quality-check-secondary.button.loading,
   pointer-events: none !important;
 }
 
+input.dqm-drupal-module-run-quality-check.button:focus,
+.dqm-drupal-module-run-quality-check.button:focus,
+input.dqm-drupal-module-run-quality-check-secondary.button:focus,
+.dqm-drupal-module-run-quality-check-secondary.button:focus {
+  outline: 3px solid #005fcc !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #005fcc !important;
+}
+
 .dqm-drupal-module-toolbar-tray {
   justify-content: center;
   display: flex;

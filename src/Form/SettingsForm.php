@@ -20,9 +20,8 @@ class SettingsForm extends ConfigFormBase {
     $config = $this->config('dqm_drupal_module.settings');  
 
     $form['module_description'] = [
-      '#markup' => '<div class="description" style="margin-bottom:20px; font-size:1.1em; color:#555;">A Drupal Module for Digital Quality & Accessibility Management.</div>',
+      '#markup' => '<p class="description" style="margin-bottom:20px; font-size:1.1em; color:#555;">A Drupal Module for Digital Quality & Accessibility Management.</p>',
     ];
-
     $form['api_key'] = [  
       '#type' => 'textfield',  
       '#title' => $this->t('DQM CMS API Key'),  

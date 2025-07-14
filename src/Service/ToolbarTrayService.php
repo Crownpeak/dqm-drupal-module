@@ -50,7 +50,7 @@ class ToolbarTrayService {
   protected function buildPreviewNotice(): array {
     return [
       '#type' => 'markup',
-      '#markup' => '<div class="dqm-preview-notice"><strong>Preview Mode Detected</strong><br>Enhanced content extraction for preview content.</div>',
+      '#markup' => '<div class="dqm-preview-notice" aria-live="polite"><strong>Preview Mode Detected</strong><br>Enhanced content extraction for preview content.</div>',
     ];
   }
 
@@ -93,7 +93,7 @@ class ToolbarTrayService {
 
     return [
       '#type' => 'markup',
-      '#markup' => '<div class="dqm-help-text">' . $help_message . '</div>',
+      '#markup' => '<div class="dqm-help-text" aria-live="polite">' . $help_message . '</div>',
     ];
   }
 
