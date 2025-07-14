@@ -1,6 +1,0 @@
-name: Crownpeak Digital Quality & Accessibility Management
-description: 'A Drupal module for Crownpeak Digital Quality & Accessibility Management.'
-type: module
-core_version_requirement: ^11
-package: 'Quality Assurance'
-configure: crownpeak_dqm.settings

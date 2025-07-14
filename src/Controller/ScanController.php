@@ -1,5 +1,5 @@
 <?php
-namespace Drupal\crownpeak_dqm\Controller;
+namespace Drupal\dqm_drupal_module\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\HttpFoundation\Request;
@@ -8,8 +8,8 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 class ScanController extends ControllerBase {
 
   public function scan(Request $request) {
-    $logger = \Drupal::logger('crownpeak_dqm');
-    $config = \Drupal::config('crownpeak_dqm.settings');
+    $logger = \Drupal::logger('dqm_drupal_module');
+    $config = \Drupal::config('dqm_drupal_module.settings');
     $api_key = $config->get('api_key');
     $website_id = $config->get('website_id');
     $content = $request->request->get('content');
@@ -148,8 +148,8 @@ class ScanController extends ControllerBase {
   }
 
   public function getResults($assetId) {
-    $logger = \Drupal::logger('crownpeak_dqm');
-    $config = \Drupal::config('crownpeak_dqm.settings');
+    $logger = \Drupal::logger('dqm_drupal_module');
+    $config = \Drupal::config('dqm_drupal_module.settings');
     $api_key = $config->get('api_key');
     if (empty($assetId)) {
       return new JsonResponse(['success' => false, 'message' => 'No asset ID provided.']);
@@ -193,8 +193,8 @@ class ScanController extends ControllerBase {
    * Scan content from a preview URL or any URL by fetching its rendered content.
    */
   public function scanFromUrl(Request $request) {
-    $logger = \Drupal::logger('crownpeak_dqm');
-    $config = \Drupal::config('crownpeak_dqm.settings');
+    $logger = \Drupal::logger('dqm_drupal_module');
+    $config = \Drupal::config('dqm_drupal_module.settings');
     $api_key = $config->get('api_key');
     $website_id = $config->get('website_id');
     $url = $request->request->get('url');
@@ -227,14 +227,14 @@ class ScanController extends ControllerBase {
    * Fetch and clean content from a URL.
    */
   private function fetchUrlContent($url, $cleanContent = true) {
-    $logger = \Drupal::logger('crownpeak_dqm');
+    $logger = \Drupal::logger('dqm_drupal_module');
     if (strpos($url, '/node/preview/') !== false || strpos($url, '/preview/') !== false) {
       return $this->fetchPreviewContent($url, $cleanContent);
     }
     $context = stream_context_create([
       'http' => [
         'timeout' => 30,
-        'user_agent' => 'Crownpeak DQM Scanner/1.0',
+        'user_agent' => 'DQM Scanner/1.0',
         'follow_location' => true,
         'max_redirects' => 5,
       ]
@@ -255,7 +255,7 @@ class ScanController extends ControllerBase {
    * Fetch content from a preview URL by rendering the node.
    */
   private function fetchPreviewContent($url, $cleanContent = true) {
-    $logger = \Drupal::logger('crownpeak_dqm');
+    $logger = \Drupal::logger('dqm_drupal_module');
     if (preg_match('/\/node\/preview\/([a-f0-9-]+)\//', $url, $matches)) {
       $uuid = $matches[1];
       $nodes = \Drupal::entityTypeManager()
@@ -300,7 +300,7 @@ class ScanController extends ControllerBase {
    * Clean HTML content by removing admin elements and scripts.
    */
   private function cleanHtmlContent($html) {
-    $logger = \Drupal::logger('crownpeak_dqm');
+    $logger = \Drupal::logger('dqm_drupal_module');
     $dom = new \DOMDocument('1.0', 'UTF-8');
     $dom->preserveWhiteSpace = false;
     $dom->formatOutput = true;
@@ -321,7 +321,7 @@ class ScanController extends ControllerBase {
       '//div[contains(@class, "breadcrumb")]',
       '//div[contains(@class, "tabs")]',
       '//div[contains(@class, "form-actions")]',
-      '//div[contains(@class, "crownpeak-dqm")]',
+      '//div[contains(@class, "dqm-drupal-module")]',
       '//script',
       '//noscript',
       '//div[contains(@class, "visually-hidden")]',

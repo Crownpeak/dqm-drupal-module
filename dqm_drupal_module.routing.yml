@@ -1,0 +1,39 @@
+dqm_drupal_module.settings:  
+  path: '/admin/config/content/dqm-drupal-module'  
+  defaults:  
+    _form: '\Drupal\dqm_drupal_module\Form\SettingsForm'  
+    _title: 'DQM Drupal Module'  
+  requirements:  
+    _permission: 'administer dqm drupal module'  
+
+dqm_drupal_module.toolbar_tray:
+  path: '/admin/dqm-drupal-module/tray'
+  defaults:
+    _controller: '\Drupal\dqm_drupal_module\Controller\ToolbarTrayController::tray'
+    _title: 'DQM Drupal Module'
+  requirements:
+    _permission: 'administer dqm drupal module'  
+
+dqm_drupal_module.scan:
+  path: '/dqm-drupal-module/scan'
+  defaults:
+    _controller: '\Drupal\dqm_drupal_module\Controller\ScanController::scan'
+  requirements:
+    _permission: 'administer dqm drupal module'
+  methods: [POST]
+
+dqm_drupal_module.scan_from_url:
+  path: '/dqm-drupal-module/scan-from-url'
+  defaults:
+    _controller: '\Drupal\dqm_drupal_module\Controller\ScanController::scanFromUrl'
+  requirements:
+    _permission: 'administer dqm drupal module'
+  methods: [POST]
+
+dqm_drupal_module.results:
+  path: '/dqm-drupal-module/results/{assetId}'
+  defaults:
+    _controller: '\Drupal\dqm_drupal_module\Controller\ScanController::getResults'
+  requirements:
+    _permission: 'administer dqm drupal module'
+  methods: [GET]

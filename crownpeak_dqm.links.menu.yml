@@ -1,6 +1,0 @@
-crownpeak_dqm.settings:
-  title: 'Crownpeak Digital Quality & Accessibility Management'
-  description: 'A Drupal Module for Crownpeak Digital Quality & Accessibility Management.'
-  parent: system.admin_config_content
-  route_name: crownpeak_dqm.settings
-  weight: 10

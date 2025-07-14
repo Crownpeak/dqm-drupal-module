@@ -1,13 +1,13 @@
-.toolbar-icon-crownpeak-dqm {
+.toolbar-icon-dqm-drupal-module {
   background-size: 24px 24px;
   background-repeat: no-repeat;
   padding-left: 32px;
 }
 
-input.crownpeak-dqm-run-quality-check.button,
-.crownpeak-dqm-run-quality-check.button,
-input.crownpeak-dqm-run-quality-check-secondary.button,
-.crownpeak-dqm-run-quality-check-secondary.button{
+input.dqm-drupal-module-run-quality-check.button,
+.dqm-drupal-module-run-quality-check.button,
+input.dqm-drupal-module-run-quality-check-secondary.button,
+.dqm-drupal-module-run-quality-check-secondary.button{
   background: #b604d4 !important;
   border-color: #b604d4 !important;
   color: white !important;
@@ -28,14 +28,14 @@ input.crownpeak-dqm-run-quality-check-secondary.button,
   text-align: center !important;
 }
 
-input.crownpeak-dqm-run-quality-check.button:disabled,
-.crownpeak-dqm-run-quality-check.button:disabled,
-input.crownpeak-dqm-run-quality-check-secondary.button:disabled,
-.crownpeak-dqm-run-quality-check-secondary.button:disabled,
-input.crownpeak-dqm-run-quality-check.button.loading,
-.crownpeak-dqm-run-quality-check.button.loading,
-input.crownpeak-dqm-run-quality-check-secondary.button.loading,
-.crownpeak-dqm-run-quality-check-secondary.button.loading {
+input.dqm-drupal-module-run-quality-check.button:disabled,
+.dqm-drupal-module-run-quality-check.button:disabled,
+input.dqm-drupal-module-run-quality-check-secondary.button:disabled,
+.dqm-drupal-module-run-quality-check-secondary.button:disabled,
+input.dqm-drupal-module-run-quality-check.button.loading,
+.dqm-drupal-module-run-quality-check.button.loading,
+input.dqm-drupal-module-run-quality-check-secondary.button.loading,
+.dqm-drupal-module-run-quality-check-secondary.button.loading {
   background: #cccccc !important;
   border-color: #cccccc !important;
   color: #666666 !important;
@@ -44,12 +44,12 @@ input.crownpeak-dqm-run-quality-check-secondary.button.loading,
   pointer-events: none !important;
 }
 
-.crownpeak-dqm-toolbar-tray {
+.dqm-drupal-module-toolbar-tray {
   justify-content: center;
   display: flex;
 }
 
-.crownpeak-dqm-toolbar-tray {
+.dqm-drupal-module-toolbar-tray {
   flex-direction: column;
 }
 

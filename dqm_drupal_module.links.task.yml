@@ -1,0 +1,5 @@
+dqm_drupal_module.settings:
+  route_name: dqm_drupal_module.settings
+  title: 'Configure DQM Module'
+  description: 'Configure API credentials and settings for Digital Quality Management.'
+  base_route: dqm_drupal_module.settings

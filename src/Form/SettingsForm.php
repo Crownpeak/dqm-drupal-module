@@ -1,5 +1,5 @@
 <?php  
-namespace Drupal\crownpeak_dqm\Form;  
+namespace Drupal\dqm_drupal_module\Form;  
 
 use Drupal\Core\Form\ConfigFormBase;  
 use Drupal\Core\Form\FormStateInterface;  
@@ -9,18 +9,18 @@ use Drupal;
 class SettingsForm extends ConfigFormBase {  
 
   public function getFormId() {  
-    return 'crownpeak_dqm_settings';  
+    return 'dqm_drupal_module_settings';  
   }  
 
   protected function getEditableConfigNames() {  
-    return ['crownpeak_dqm.settings'];  
+    return ['dqm_drupal_module.settings'];  
   }  
 
   public function buildForm(array $form, FormStateInterface $form_state) {  
-    $config = $this->config('crownpeak_dqm.settings');  
+    $config = $this->config('dqm_drupal_module.settings');  
 
     $form['module_description'] = [
-      '#markup' => '<div class="description" style="margin-bottom:20px; font-size:1.1em; color:#555;">A Drupal Module for Crownpeak Digital Quality & Accessibility Management.</div>',
+      '#markup' => '<div class="description" style="margin-bottom:20px; font-size:1.1em; color:#555;">A Drupal Module for Digital Quality & Accessibility Management.</div>',
     ];
 
     $form['api_key'] = [  
@@ -28,7 +28,7 @@ class SettingsForm extends ConfigFormBase {
       '#title' => $this->t('DQM CMS API Key'),  
       '#default_value' => $config->get('api_key'),  
       '#required' => TRUE,  
-      '#description' => $this->t('Your Crownpeak DQM CMS API Key. Contact support@crownpeak.com if you do not have this.'),  
+      '#description' => $this->t('Your DQM CMS API Key. Contact support if you do not have this.'),  
       '#placeholder' => $this->t('Enter your DQM API key'),
     ];  
 
@@ -37,7 +37,7 @@ class SettingsForm extends ConfigFormBase {
       '#title' => $this->t('Website ID'),  
       '#default_value' => $config->get('website_id'),  
       '#required' => TRUE,  
-      '#description' => $this->t('Your DQM Website ID. If you are unsure what this is, please contact support@crownpeak.com.'),  
+      '#description' => $this->t('Your DQM Website ID. If you are unsure what this is, please contact support.'),  
       '#placeholder' => $this->t('Enter your Website ID'),
     ];
     
@@ -45,7 +45,7 @@ class SettingsForm extends ConfigFormBase {
       [
         '#tag' => 'style',
         '#value' => '
-          .form-submit.crownpeak-dqm-save-button {
+          .form-submit.dqm-drupal-module-save-button {
             background: #b604d4 !important;
             border-color: #b604d4 !important;
             color: white !important;
@@ -58,19 +58,19 @@ class SettingsForm extends ConfigFormBase {
             cursor: pointer !important;
             border: 1px solid transparent !important;
           }
-          .form-submit.crownpeak-dqm-save-button:hover {
+          .form-submit.dqm-drupal-module-save-button:hover {
             background: #9a039d !important;
             border-color: #9a039d !important;
           }
         ',
       ],
-      'crownpeak-dqm-settings-style'
+      'dqm-drupal-module-settings-style'
     ];
     
     $form = parent::buildForm($form, $form_state);
 
     if (isset($form['actions']['submit'])) {
-      $form['actions']['submit']['#attributes']['class'][] = 'crownpeak-dqm-save-button';
+      $form['actions']['submit']['#attributes']['class'][] = 'dqm-drupal-module-save-button';
     }
     
     return $form;
@@ -80,7 +80,7 @@ class SettingsForm extends ConfigFormBase {
     $api_key = $form_state->getValue('api_key');
     $website_id = $form_state->getValue('website_id');
     
-    $this->config('crownpeak_dqm.settings')  
+    $this->config('dqm_drupal_module.settings')  
       ->set('api_key', $api_key)  
       ->set('website_id', $website_id)  
       ->save();  

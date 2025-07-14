@@ -1,4 +1,0 @@
-administer crownpeak dqm:
-  title: 'Administer Crownpeak DQM'
-  description: 'Configure Crownpeak Digital Quality Management settings and perform scans.'
-  restrict access: true

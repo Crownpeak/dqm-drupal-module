@@ -1,0 +1,4 @@
+administer dqm drupal module:
+  title: 'Administer DQM Drupal Module'
+  description: 'Configure Digital Quality Management settings and perform scans.'
+  restrict access: true

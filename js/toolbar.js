@@ -1,20 +1,20 @@
 (function ($, Drupal, once) {
-  Drupal.behaviors.crownpeakDqmToolbar = {
+  Drupal.behaviors.dqmDrupalModuleToolbar = {
     attach: function (context, settings) {
-      if (!$(document).data('crownpeak-dqm-events-bound')) {
-        $(document).on('click', '.crownpeak-dqm-run-quality-check', function() {
+      if (!$(document).data('dqm-drupal-module-events-bound')) {
+        $(document).on('click', '.dqm-drupal-module-run-quality-check', function() {
           runQualityCheck(this, 'content');
         });
         
-        $(document).on('click', '.crownpeak-dqm-run-quality-check-secondary', function() {
+        $(document).on('click', '.dqm-drupal-module-run-quality-check-secondary', function() {
           runQualityCheck(this, 'content');
         });
         
-        $(document).on('click', '.crownpeak-dqm-scan-url', function() {
+        $(document).on('click', '.dqm-drupal-module-scan-url', function() {
           runQualityCheck(this, 'url');
         });
         
-        $(document).data('crownpeak-dqm-events-bound', true);
+        $(document).data('dqm-drupal-module-events-bound', true);
       }
     }
   };
@@ -56,7 +56,7 @@
     }
     
     $.ajax({
-      url: Drupal.url('crownpeak-dqm/scan-from-url'),
+      url: Drupal.url('dqm-drupal-module/scan-from-url'),
       method: 'POST',
       data: requestData,
       dataType: 'json',
@@ -98,7 +98,7 @@
     }
     
     $.ajax({
-      url: Drupal.url('crownpeak-dqm/scan'),
+      url: Drupal.url('dqm-drupal-module/scan'),
       method: 'POST',
       data: requestData,
       dataType: 'json',
@@ -155,7 +155,7 @@
     resultsContainer.innerHTML = '<div class="dqm-loading"><span class="dqm-spinner"></span></div>';
     
     $.ajax({
-      url: Drupal.url('crownpeak-dqm/results/' + assetId),
+      url: Drupal.url('dqm-drupal-module/results/' + assetId),
       method: 'GET',
       dataType: 'json',
       success: function (response) {
@@ -324,7 +324,7 @@
       html += '</div>';
       html += '</div>';
     }
-    html += '<button class="crownpeak-dqm-run-quality-check-secondary button">Run Quality Check</button>';
+    html += '<button class="dqm-drupal-module-run-quality-check-secondary button">Run Quality Check</button>';
     
     container.innerHTML = html;
     var pieChart = container.querySelector('.dqm-pie-chart');
@@ -524,7 +524,7 @@
       '.shortcuts',
       '#edit-actions',
       '.form-actions',
-      '.crownpeak-dqm-toolbar-item',
+      '.dqm-drupal-module-toolbar-item',
       '.dqm-results-container',
       '[id*="edit-"]',
       '[class*="edit-"]',

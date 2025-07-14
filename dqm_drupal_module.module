@@ -1,26 +1,26 @@
 <?php
 /**
  * @file
- * Crownpeak DQM module file.
+ * DQM Drupal Module file.
  */
 
 /**
  * Implements hook_toolbar().
  */
-function crownpeak_dqm_toolbar() {
+function dqm_drupal_module_toolbar() {
   $items = [];
 
-  if (\Drupal::currentUser()->hasPermission('administer crownpeak dqm') && _crownpeak_dqm_should_show_toolbar()) {
-    $items['crownpeak_dqm'] = [
+  if (\Drupal::currentUser()->hasPermission('administer dqm drupal module') && _dqm_drupal_module_should_show_toolbar()) {
+    $items['dqm_drupal_module'] = [
       '#type' => 'toolbar_item',
       'tab' => [
         '#type' => 'link',
-        '#title' => t('Crownpeak DQM'),
+        '#title' => t('DQM Module'),
         '#url' => \Drupal\Core\Url::fromRoute('<current>'),
         '#attributes' => [
           'class' => ['trigger', 'toolbar-item'],
-          'id' => 'toolbar-item-crownpeak-dqm',
-          'data-toolbar-tray' => 'toolbar-item-crownpeak-dqm-tray',
+          'id' => 'toolbar-item-dqm-drupal-module',
+          'data-toolbar-tray' => 'toolbar-item-dqm-drupal-module-tray',
           'role' => 'button',
           'aria-pressed' => 'false',
         ],
@@ -28,18 +28,18 @@ function crownpeak_dqm_toolbar() {
       'tray' => [
         '#type' => 'container',
         '#attributes' => [
-          'id' => 'toolbar-item-crownpeak-dqm-tray',
+          'id' => 'toolbar-item-dqm-drupal-module-tray',
           'class' => ['toolbar-tray', 'toolbar-tray-vertical'],
-          'data-toolbar-tray' => 'toolbar-item-crownpeak-dqm-tray',
+          'data-toolbar-tray' => 'toolbar-item-dqm-drupal-module-tray',
         ],
         'content' => [
           '#type' => 'container',
-          '#attributes' => ['class' => ['crownpeak-dqm-toolbar-tray']],
+          '#attributes' => ['class' => ['dqm-drupal-module-toolbar-tray']],
           'run_quality_check' => [
             '#type' => 'button',
             '#value' => t('Run Quality Check'),
             '#attributes' => [
-              'class' => ['crownpeak-dqm-run-quality-check'],
+              'class' => ['dqm-drupal-module-run-quality-check'],
             ],
           ],
         ],
@@ -53,9 +53,9 @@ function crownpeak_dqm_toolbar() {
 /**
  * Implements hook_page_attachments().
  */
-function crownpeak_dqm_page_attachments(array &$attachments) {
-  if (\Drupal::currentUser()->hasPermission('administer crownpeak dqm') && _crownpeak_dqm_should_show_toolbar()) {
-    $attachments['#attached']['library'][] = 'crownpeak_dqm/toolbar';
+function dqm_drupal_module_page_attachments(array &$attachments) {
+  if (\Drupal::currentUser()->hasPermission('administer dqm drupal module') && _dqm_drupal_module_should_show_toolbar()) {
+    $attachments['#attached']['library'][] = 'dqm_drupal_module/toolbar';
   }
 }
 
@@ -65,7 +65,7 @@ function crownpeak_dqm_page_attachments(array &$attachments) {
  * @return bool
  *   TRUE if the toolbar should be shown, FALSE otherwise.
  */
-function _crownpeak_dqm_should_show_toolbar() {
+function _dqm_drupal_module_should_show_toolbar() {
   $route_match = \Drupal::routeMatch();
   $current_route = $route_match->getRouteName();
   $current_path = \Drupal::service('path.current')->getPath();

@@ -1,12 +1,12 @@
 <?php
-namespace Drupal\crownpeak_dqm\Controller;
+namespace Drupal\dqm_drupal_module\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class ToolbarTrayController extends ControllerBase {
   /**
-   * Returns the tray content for the Crownpeak DQM toolbar tab.
+   * Returns the tray content for the DQM Drupal Module toolbar tab.
    */
   public function tray() {
     $current_path = \Drupal::request()->getPathInfo();
@@ -14,7 +14,7 @@ class ToolbarTrayController extends ControllerBase {
     
     $build = [
       '#type' => 'container',
-      '#attributes' => ['class' => ['crownpeak-dqm-toolbar-tray']],
+      '#attributes' => ['class' => ['dqm-drupal-module-toolbar-tray']],
     ];
     
     if ($is_preview) {
@@ -27,7 +27,7 @@ class ToolbarTrayController extends ControllerBase {
         '#type' => 'button',
         '#value' => $this->t('Scan Preview Content'),
         '#attributes' => [
-          'class' => ['crownpeak-dqm-run-quality-check', 'button--primary'],
+          'class' => ['dqm-drupal-module-run-quality-check', 'button--primary'],
           'title' => $this->t('Extract and scan the preview content without admin elements'),
         ],
       ];
@@ -36,7 +36,7 @@ class ToolbarTrayController extends ControllerBase {
         '#type' => 'button',
         '#value' => $this->t('Server-Side Scan'),
         '#attributes' => [
-          'class' => ['crownpeak-dqm-scan-url', 'button--small'],
+          'class' => ['dqm-drupal-module-scan-url', 'button--small'],
           'title' => $this->t('Render content on server and scan (recommended for preview pages)'),
         ],
       ];
@@ -45,7 +45,7 @@ class ToolbarTrayController extends ControllerBase {
         '#type' => 'button',
         '#value' => $this->t('Run Quality Check'),
         '#attributes' => [
-          'class' => ['crownpeak-dqm-run-quality-check'],
+          'class' => ['dqm-drupal-module-run-quality-check'],
         ],
       ];
     }
@@ -63,14 +63,14 @@ class ToolbarTrayController extends ControllerBase {
       [
         '#tag' => 'style',
         '#value' => '
-          .crownpeak-dqm-toolbar-tray { padding: 15px; min-width: 250px; }
+          .dqm-drupal-module-toolbar-tray { padding: 15px; min-width: 250px; }
           .dqm-preview-notice { background: #e3f2fd; padding: 10px; margin-bottom: 10px; border-radius: 4px; font-size: 12px; }
           .dqm-help-text { font-size: 11px; color: #666; margin-top: 10px; }
-          .crownpeak-dqm-toolbar-tray button { margin: 5px 0; width: 100%; }
+          .dqm-drupal-module-toolbar-tray button { margin: 5px 0; width: 100%; }
           .button--small { font-size: 12px; padding: 5px 10px; }
         ',
       ],
-      'crownpeak-dqm-tray-style'
+      'dqm-drupal-module-tray-style'
     ];
     
     return $build;
