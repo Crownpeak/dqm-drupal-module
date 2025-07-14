@@ -2,7 +2,7 @@ dqm_drupal_module.settings:
   path: '/admin/config/content/dqm-drupal-module'  
   defaults:  
     _form: '\Drupal\dqm_drupal_module\Form\SettingsForm'  
-    _title: 'DQM Drupal Module'  
+    _title: 'Crownpeak DQM Drupal Module'  
   requirements:  
     _permission: 'administer dqm drupal module'  
 
@@ -10,7 +10,7 @@ dqm_drupal_module.toolbar_tray:
   path: '/admin/dqm-drupal-module/tray'
   defaults:
     _controller: '\Drupal\dqm_drupal_module\Controller\ToolbarTrayController::tray'
-    _title: 'DQM Drupal Module'
+    _title: 'Crownpeak DQM Drupal Module'
   requirements:
     _permission: 'administer dqm drupal module'  
 

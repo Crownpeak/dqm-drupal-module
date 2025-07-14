@@ -1,6 +1,6 @@
-name: DQM Drupal Module
+name: Crownpeak DQM Drupal Module
 description: 'A Drupal module for Digital Quality & Accessibility Management.'
 type: module
-core_version_requirement: ^10
+core_version_requirement: '>=10'
 package: 'Quality Assurance'
 configure: dqm_drupal_module.settings

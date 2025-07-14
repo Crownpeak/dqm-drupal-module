@@ -1,5 +1,5 @@
 dqm_drupal_module.settings:
-  title: 'DQM Drupal Module'
+  title: 'Crownpeak DQM Drupal Module'
   description: 'A Drupal Module for Digital Quality & Accessibility Management.'
   parent: system.admin_config_content
   route_name: dqm_drupal_module.settings
