@@ -3,6 +3,7 @@ namespace Drupal\dqm_drupal_module\Controller;
 
 
 use Drupal\Core\Controller\ControllerBase;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Drupal\dqm_drupal_module\Service\ScanService;
@@ -30,7 +31,7 @@ class ScanController extends ControllerBase {
     $asset_id = $request->request->get('assetId');
     if (empty($content)) {
       $logger->error('No content provided for scan.');
-      return new JsonResponse(['success' => false, 'message' => 'No content provided.']);
+      throw new HttpException(400, 'No content provided.');
     }
     $result = $this->scanService->scanContent($api_key, $website_id, $content, $asset_id, $logger);
     return new JsonResponse($result);
@@ -53,7 +54,8 @@ class ScanController extends ControllerBase {
     $asset_id = $request->request->get('assetId');
     $clean_content = $request->request->get('cleanContent', true);
     if (empty($url)) {
-      return new JsonResponse(['success' => false, 'message' => 'No URL provided.']);
+      $logger->error('No URL provided for scanFromUrl.');
+      throw new HttpException(400, 'No URL provided.');
     }
     $logger->info('=== URL-BASED CONTENT SCANNING ===');
     $logger->info('URL to scan: @url', ['@url' => $url]);
@@ -62,7 +64,8 @@ class ScanController extends ControllerBase {
     try {
       $content = $this->fetchUrlContent($url, $clean_content);
       if (empty($content)) {
-        return new JsonResponse(['success' => false, 'message' => 'Could not fetch content from URL.']);
+        $logger->error('Could not fetch content from URL: @url', ['@url' => $url]);
+        throw new HttpException(400, 'Could not fetch content from URL.');
       }
       $request->request->set('content', $content);
       if ($asset_id) {
