@@ -155,7 +155,8 @@ input.dqm-drupal-module-run-quality-check-secondary.button.loading,
   line-height: 1;
   font-weight: normal;
   font-style: normal;
-  margin-block: 0;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .dqm-progress-bar {
@@ -214,8 +215,8 @@ input.dqm-drupal-module-run-quality-check-secondary.button.loading,
   background: #ff5630 !important;
 }
 
-.toolbar-oriented .toolbar-tray-vertical {
-  width: 18rem;
+.toolbar-tab #toolbar-item-dqm-drupal-module-tray {
+  width: 18rem !important;
 }
 
 .dqm-checkpoint-item .checkpoint-icon-title-row {
@@ -291,6 +292,8 @@ input.dqm-drupal-module-run-quality-check-secondary.button.loading,
 
 .dqm-filter-wrapper:hover .dqm-filter-icon {
   color: #b604d4;
+  -webkit-transform: translateY(-50%) scale(1.1);
+  -moz-transform: translateY(-50%) scale(1.1);
   transform: translateY(-50%) scale(1.1);
 }
 
