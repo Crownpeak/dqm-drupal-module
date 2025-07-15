@@ -351,7 +351,8 @@
         html += '<span class="checkpoint-title">' + (checkpoint.name || 'Unknown Checkpoint') + '</span>';
         if (Array.isArray(checkpoint.topics) && checkpoint.topics.length > 0) {
           html += '<div class="checkpoint-badges" style="display:flex;margin-top:4px;">';
-          checkpoint.topics.forEach(function(topic) {
+          var sortedTopics = checkpoint.topics.slice().sort();
+          sortedTopics.forEach(function(topic) {
             var badgeClass = (topic || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
             html += '<span class="badge ' + badgeClass + '">' + topic + '</span>';
           });
