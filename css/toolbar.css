@@ -224,8 +224,16 @@ input.dqm-drupal-module-run-quality-check-secondary.button:focus,
   background: #ff5630 !important;
 }
 
-.toolbar-tab #toolbar-item-dqm-drupal-module-tray {
+.toolbar-tab
+  #toolbar-item-dqm-drupal-module-tray
+  .toolbar-tray.toolbar-tray-vertical.is-active {
   width: 18rem !important;
+}
+.toolbar-tab #toolbar-item-dqm-drupal-module-tray .toolbar-tray.toolbar-tray-horizontal.is-active {
+  width: 18rem;
+  max-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .dqm-checkpoint-item .checkpoint-icon-title-row {
@@ -235,7 +243,7 @@ input.dqm-drupal-module-run-quality-check-secondary.button:focus,
 }
 
 .checkpoint-title b {
-    font-weight: normal !important;
+  font-weight: normal !important;
 }
 
 .dqm-filter-container {
@@ -249,7 +257,7 @@ input.dqm-drupal-module-run-quality-check-secondary.button:focus,
 }
 
 .dqm-filter-wrapper::before {
-  content: '🔍';
+  content: "🔍";
   position: absolute;
   left: 12px;
   top: 50%;
