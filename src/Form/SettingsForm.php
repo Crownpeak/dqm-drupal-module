@@ -78,12 +78,15 @@ class SettingsForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {  
     $api_key = $form_state->getValue('api_key');
     $website_id = $form_state->getValue('website_id');
-    
-    $this->config('dqm_drupal_module.settings')  
-      ->set('api_key', $api_key)  
-      ->set('website_id', $website_id)  
-      ->save();  
-
-    parent::submitForm($form, $form_state);  
-  }  
+    try {
+      $this->config('dqm_drupal_module.settings')
+        ->set('api_key', $api_key)
+        ->set('website_id', $website_id)
+        ->save();
+    } catch (\Exception $e) {
+      \Drupal::messenger()->addError($this->t('Failed to save settings: @message', ['@message' => $e->getMessage()]));
+      return;
+    }
+    parent::submitForm($form, $form_state);
+  }
 }

@@ -9,43 +9,46 @@
  */
 function dqm_drupal_module_toolbar() {
   $items = [];
-
-  if (\Drupal::currentUser()->hasPermission('administer dqm drupal module') && _dqm_drupal_module_should_show_toolbar()) {
-    $items['dqm_drupal_module'] = [
-      '#type' => 'toolbar_item',
-      'tab' => [
-        '#type' => 'link',
-        '#title' => t('DQM Module'),
-        '#url' => \Drupal\Core\Url::fromRoute('<current>'),
-        '#attributes' => [
-          'class' => ['trigger', 'toolbar-item'],
-          'id' => 'toolbar-item-dqm-drupal-module',
-          'data-toolbar-tray' => 'toolbar-item-dqm-drupal-module-tray',
-          'role' => 'button',
-          'aria-pressed' => 'false',
+  try {
+    if (\Drupal::currentUser()->hasPermission('administer dqm drupal module') && _dqm_drupal_module_should_show_toolbar()) {
+      $items['dqm_drupal_module'] = [
+        '#type' => 'toolbar_item',
+        'tab' => [
+          '#type' => 'link',
+          '#title' => t('DQM Module'),
+          '#url' => \Drupal\Core\Url::fromRoute('<current>'),
+          '#attributes' => [
+            'class' => ['trigger', 'toolbar-item'],
+            'id' => 'toolbar-item-dqm-drupal-module',
+            'data-toolbar-tray' => 'toolbar-item-dqm-drupal-module-tray',
+            'role' => 'button',
+            'aria-pressed' => 'false',
+          ],
         ],
-      ],
-      'tray' => [
-        '#type' => 'container',
-        '#attributes' => [
-          'id' => 'toolbar-item-dqm-drupal-module-tray',
-          'class' => ['toolbar-tray', 'toolbar-tray-vertical'],
-          'data-toolbar-tray' => 'toolbar-item-dqm-drupal-module-tray',
-        ],
-        'content' => [
+        'tray' => [
           '#type' => 'container',
-          '#attributes' => ['class' => ['dqm-drupal-module-toolbar-tray']],
-          'run_quality_check' => [
-            '#type' => 'button',
-            '#value' => t('Run Quality Check'),
-            '#attributes' => [
-              'class' => ['dqm-drupal-module-run-quality-check'],
+          '#attributes' => [
+            'id' => 'toolbar-item-dqm-drupal-module-tray',
+            'class' => ['toolbar-tray', 'toolbar-tray-vertical'],
+            'data-toolbar-tray' => 'toolbar-item-dqm-drupal-module-tray',
+          ],
+          'content' => [
+            '#type' => 'container',
+            '#attributes' => ['class' => ['dqm-drupal-module-toolbar-tray']],
+            'run_quality_check' => [
+              '#type' => 'button',
+              '#value' => t('Run Quality Check'),
+              '#attributes' => [
+                'class' => ['dqm-drupal-module-run-quality-check'],
+              ],
             ],
           ],
         ],
-      ],
-      '#weight' => 100,
-    ];
+        '#weight' => 100,
+      ];
+    }
+  } catch (\Exception $e) {
+    \Drupal::messenger()->addError(t('Error in DQM toolbar: @msg', ['@msg' => $e->getMessage()]));
   }
   return $items;
 }
@@ -54,8 +57,12 @@ function dqm_drupal_module_toolbar() {
  * Implements hook_page_attachments().
  */
 function dqm_drupal_module_page_attachments(array &$attachments) {
-  if (\Drupal::currentUser()->hasPermission('administer dqm drupal module') && _dqm_drupal_module_should_show_toolbar()) {
-    $attachments['#attached']['library'][] = 'dqm_drupal_module/toolbar';
+  try {
+    if (\Drupal::currentUser()->hasPermission('administer dqm drupal module') && _dqm_drupal_module_should_show_toolbar()) {
+      $attachments['#attached']['library'][] = 'dqm_drupal_module/toolbar';
+    }
+  } catch (\Exception $e) {
+    \Drupal::messenger()->addError(t('Error attaching DQM toolbar assets: @msg', ['@msg' => $e->getMessage()]));
   }
 }
 
@@ -66,61 +73,56 @@ function dqm_drupal_module_page_attachments(array &$attachments) {
  *   TRUE if the toolbar should be shown, FALSE otherwise.
  */
 function _dqm_drupal_module_should_show_toolbar() {
-  $route_match = \Drupal::routeMatch();
-  $current_route = $route_match->getRouteName();
-  $current_path = \Drupal::service('path.current')->getPath();
-  
-  if (strpos($current_path, '/admin') === 0) {
+  try {
+    $route_match = \Drupal::routeMatch();
+    $current_route = $route_match->getRouteName();
+    $current_path = \Drupal::service('path.current')->getPath();
+    if (strpos($current_path, '/admin') === 0) {
+      return FALSE;
+    }
+    if (strpos($current_path, '/user') === 0) {
+      return FALSE;
+    }
+    $system_routes = [
+      'system.batch_page.html',
+      'system.batch_page.json',
+      'system.cron',
+      'system.db_update',
+      'update.status',
+      'update.module_update',
+      'update.theme_update',
+    ];
+    if (in_array($current_route, $system_routes)) {
+      return FALSE;
+    }
+    if ($current_route && (
+      strpos($current_route, 'entity.node.') === 0 ||
+      strpos($current_route, 'node.') === 0 ||
+      $current_route === 'node.add' ||
+      $current_route === 'node.add_page'
+    )) {
+      return TRUE;
+    }
+    if ($current_route && strpos($current_route, 'entity.taxonomy_term.') === 0) {
+      return TRUE;
+    }
+    if ($current_route === 'view.frontpage.page_1' || 
+        $current_route === '<front>' || 
+        $current_route === 'system.404' ||
+        $current_route === 'system.403') {
+      return TRUE;
+    }
+    $node = $route_match->getParameter('node');
+    if ($node && $node instanceof \Drupal\node\NodeInterface) {
+      return TRUE;
+    }
+    if (!preg_match('/^(admin|user|batch|cron|update|install|core)/', $current_path) && 
+        !preg_match('/\.(css|js|ico|png|jpg|jpeg|gif|svg)$/', $current_path)) {
+      return TRUE;
+    }
+    return FALSE;
+  } catch (\Exception $e) {
+    \Drupal::messenger()->addError(t('Error determining toolbar visibility: @msg', ['@msg' => $e->getMessage()]));
     return FALSE;
   }
-  
-  if (strpos($current_path, '/user') === 0) {
-    return FALSE;
-  }
-  
-  $system_routes = [
-    'system.batch_page.html',
-    'system.batch_page.json',
-    'system.cron',
-    'system.db_update',
-    'update.status',
-    'update.module_update',
-    'update.theme_update',
-  ];
-  
-  if (in_array($current_route, $system_routes)) {
-    return FALSE;
-  }
-  
-  if ($current_route && (
-    strpos($current_route, 'entity.node.') === 0 ||
-    strpos($current_route, 'node.') === 0 ||
-    $current_route === 'node.add' ||
-    $current_route === 'node.add_page'
-  )) {
-    return TRUE;
-  }
-  
-  if ($current_route && strpos($current_route, 'entity.taxonomy_term.') === 0) {
-    return TRUE;
-  }
-  
-  if ($current_route === 'view.frontpage.page_1' || 
-      $current_route === '<front>' || 
-      $current_route === 'system.404' ||
-      $current_route === 'system.403') {
-    return TRUE;
-  }
-  
-  $node = $route_match->getParameter('node');
-  if ($node && $node instanceof \Drupal\node\NodeInterface) {
-    return TRUE;
-  }
-  
-  if (!preg_match('/^(admin|user|batch|cron|update|install|core)/', $current_path) && 
-      !preg_match('/\.(css|js|ico|png|jpg|jpeg|gif|svg)$/', $current_path)) {
-    return TRUE;
-  }
-  
-  return FALSE;
 }

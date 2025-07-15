@@ -1,18 +1,20 @@
 <?php
 
 namespace Drupal\dqm_drupal_module\Service;
-
-use Drupal\Core\StringTranslation\TranslationInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Drupal\Core\StringTranslation\TranslationInterface;
+use Psr\Log\LoggerInterface;
 
 class ToolbarTrayService {
 
   protected $requestStack;
   protected $stringTranslation;
+  protected $logger;
 
-  public function __construct(RequestStack $request_stack, TranslationInterface $string_translation) {
+  public function __construct(RequestStack $request_stack, TranslationInterface $string_translation, LoggerInterface $logger) {
     $this->requestStack = $request_stack;
     $this->stringTranslation = $string_translation;
+    $this->logger = $logger;
   }
 
   protected function t($string, array $args = [], array $options = []) {
@@ -20,31 +22,52 @@ class ToolbarTrayService {
   }
 
   public function isPreviewMode(): bool {
-    $current_path = $this->requestStack->getCurrentRequest()->getPathInfo();
-    return (strpos($current_path, '/node/preview/') !== FALSE || strpos($current_path, '/preview/') !== FALSE);
+    try {
+      $current_request = $this->requestStack->getCurrentRequest();
+      if (!$current_request) {
+        throw new \RuntimeException('No current request available.');
+      }
+      $current_path = $current_request->getPathInfo();
+      return (strpos($current_path, '/node/preview/') !== FALSE || strpos($current_path, '/preview/') !== FALSE);
+    } catch (\Throwable $e) {
+      $this->logger->error('Error in isPreviewMode: @message', ['@message' => $e->getMessage()]);
+      return false;
+    }
   }
 
   public function buildTrayContent(): array {
-    $is_preview = $this->isPreviewMode();
+    try {
+      $is_preview = $this->isPreviewMode();
 
-    $build = [
-      '#type' => 'container',
-      '#attributes' => ['class' => ['dqm-drupal-module-toolbar-tray']],
-    ];
+      $build = [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['dqm-drupal-module-toolbar-tray']],
+      ];
 
-    if ($is_preview) {
-      $build['preview_notice'] = $this->buildPreviewNotice();
-      $build['run_quality_check'] = $this->buildPreviewScanButton();
-      $build['scan_url'] = $this->buildServerSideScanButton();
+      if ($is_preview) {
+        $build['preview_notice'] = $this->buildPreviewNotice();
+        $build['run_quality_check'] = $this->buildPreviewScanButton();
+        $build['scan_url'] = $this->buildServerSideScanButton();
+      }
+      else {
+        $build['run_quality_check'] = $this->buildQualityCheckButton();
+      }
+
+      $build['help'] = $this->buildHelpText($is_preview);
+      $build['#attached'] = $this->attachStyles();
+
+      return $build;
+    } catch (\Throwable $e) {
+      $this->logger->error('Error in buildTrayContent: @message', ['@message' => $e->getMessage()]);
+      return [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['dqm-drupal-module-toolbar-tray', 'dqm-error']],
+        'error' => [
+          '#type' => 'markup',
+          '#markup' => '<div class="dqm-error-message">An error occurred while building the toolbar tray.</div>',
+        ],
+      ];
     }
-    else {
-      $build['run_quality_check'] = $this->buildQualityCheckButton();
-    }
-
-    $build['help'] = $this->buildHelpText($is_preview);
-    $build['#attached'] = $this->attachStyles();
-
-    return $build;
   }
 
   protected function buildPreviewNotice(): array {
