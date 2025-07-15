@@ -4,7 +4,7 @@ namespace Drupal\dqm_drupal_module\Service;
 use Symfony\Component\HttpFoundation\Request;
 
 class ScanService {
-  public function scanContent($api_key, $website_id, $content, $asset_id = null, $logger) {
+  public function scanContent($api_key, $website_id, $content, $logger, $asset_id = null) {
     $method = $asset_id ? 'PUT' : 'POST';
     $endpoint = $asset_id 
       ? 'https://api.crownpeak.net/dqm-cms/v1/assets/' . $asset_id . '?apiKey=' . $api_key

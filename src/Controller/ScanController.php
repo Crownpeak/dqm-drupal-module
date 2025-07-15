@@ -33,7 +33,7 @@ class ScanController extends ControllerBase {
       $logger->error('No content provided for scan.');
       throw new HttpException(400, 'No content provided.');
     }
-    $result = $this->scanService->scanContent($api_key, $website_id, $content, $asset_id, $logger);
+    $result = $this->scanService->scanContent($api_key, $website_id, $content, $logger, $asset_id);
     return new JsonResponse($result);
   }
 
