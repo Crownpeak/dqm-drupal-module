@@ -272,12 +272,12 @@
       html += '<h3>📈 Quality Breakdown</h3>';
       
       var topicColors = {
-        'Accessibility': '#ff5630',
-        'SEO': '#ff8b00',
-        'Brand': '#0052cc',
+        'Accessibility': '#006675',
+        'SEO': '#2fe8b6',
+        'Brand': '#3636c5',
         'Regulatory': '#b604d4',
-        'Legal': '#6d6d6d',
-        'Usability': '#36b37e'
+        'Legal': '#001746',
+        'Usability': '#cdd1d0'
       };
       
       Object.keys(topicCounts).forEach(function (topic, index) {

@@ -350,22 +350,22 @@ input.dqm-drupal-module-run-quality-check-secondary.button:focus,
   vertical-align: middle;
 }
 .badge.accessibility {
-  background: #ff5630;
+  background: #006675;
 }
 .badge.seo {
-  background: #ff8b00;
+  background: #2fe8b6;
 }
 .badge.brand {
-  background: #0052cc;
+  background: #3636c5;
 }
 .badge.regulatory {
   background: #008060;
 }
 .badge.legal {
-  background: #6d6d6d;
+  background: #001746;
 }
 .badge.usability {
-  background: #36b37e;
+  background: #cdd1d0;
 }
 .checkpoint-badges {
   display: flex;

@@ -1,12 +1,5 @@
 <?php
-/**
- * @file
- * DQM Drupal Module file.
- */
 
-/**
- * Implements hook_toolbar().
- */
 function dqm_drupal_module_toolbar() {
   $items = [];
   try {
@@ -53,9 +46,6 @@ function dqm_drupal_module_toolbar() {
   return $items;
 }
 
-/**
- * Implements hook_page_attachments().
- */
 function dqm_drupal_module_page_attachments(array &$attachments) {
   try {
     if (\Drupal::currentUser()->hasPermission('administer dqm drupal module') && _dqm_drupal_module_should_show_toolbar()) {
@@ -66,12 +56,6 @@ function dqm_drupal_module_page_attachments(array &$attachments) {
   }
 }
 
-/**
- * Helper function to determine if the toolbar should be shown.
- * 
- * @return bool
- *   TRUE if the toolbar should be shown, FALSE otherwise.
- */
 function _dqm_drupal_module_should_show_toolbar() {
   try {
     $route_match = \Drupal::routeMatch();
