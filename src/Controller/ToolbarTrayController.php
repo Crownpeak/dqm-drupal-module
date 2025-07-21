@@ -1,78 +1,27 @@
 <?php
+
 namespace Drupal\dqm_drupal_module\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\dqm_drupal_module\Service\ToolbarTrayService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class ToolbarTrayController extends ControllerBase {
-  /**
-   * Returns the tray content for the DQM Drupal Module toolbar tab.
-   */
-  public function tray() {
-    $current_path = \Drupal::request()->getPathInfo();
-    $is_preview = (strpos($current_path, '/node/preview/') !== false || strpos($current_path, '/preview/') !== false);
-    
-    $build = [
-      '#type' => 'container',
-      '#attributes' => ['class' => ['dqm-drupal-module-toolbar-tray']],
-    ];
-    
-    if ($is_preview) {
-      $build['preview_notice'] = [
-        '#type' => 'markup',
-        '#markup' => '<div class="dqm-preview-notice"><strong>Preview Mode Detected</strong><br>Enhanced content extraction for preview content.</div>',
-      ];
-      
-      $build['run_quality_check'] = [
-        '#type' => 'button',
-        '#value' => $this->t('Scan Preview Content'),
-        '#attributes' => [
-          'class' => ['dqm-drupal-module-run-quality-check', 'button--primary'],
-          'title' => $this->t('Extract and scan the preview content without admin elements'),
-        ],
-      ];
-      
-      $build['scan_url'] = [
-        '#type' => 'button',
-        '#value' => $this->t('Server-Side Scan'),
-        '#attributes' => [
-          'class' => ['dqm-drupal-module-scan-url', 'button--small'],
-          'title' => $this->t('Render content on server and scan (recommended for preview pages)'),
-        ],
-      ];
-    } else {
-      $build['run_quality_check'] = [
-        '#type' => 'button',
-        '#value' => $this->t('Run Quality Check'),
-        '#attributes' => [
-          'class' => ['dqm-drupal-module-run-quality-check'],
-        ],
-      ];
-    }
-    
-    $build['help'] = [
-      '#type' => 'markup',
-      '#markup' => '<div class="dqm-help-text">' . 
-                   ($is_preview ? 
-                     'Preview content will be extracted without admin toolbars and menus.' : 
-                     'Page content will be scanned for quality issues.') . 
-                   '</div>',
-    ];
-    
-    $build['#attached']['html_head'][] = [
-      [
-        '#tag' => 'style',
-        '#value' => '
-          .dqm-drupal-module-toolbar-tray { padding: 15px; min-width: 250px; }
-          .dqm-preview-notice { background: #e3f2fd; padding: 10px; margin-bottom: 10px; border-radius: 4px; font-size: 12px; }
-          .dqm-help-text { font-size: 11px; color: #666; margin-top: 10px; }
-          .dqm-drupal-module-toolbar-tray button { margin: 5px 0; width: 100%; }
-          .button--small { font-size: 12px; padding: 5px 10px; }
-        ',
-      ],
-      'dqm-drupal-module-tray-style'
-    ];
-    
-    return $build;
+
+  protected $toolbarTrayService;
+
+  public function __construct(ToolbarTrayService $toolbar_tray_service) {
+    $this->toolbarTrayService = $toolbar_tray_service;
   }
+
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('dqm_drupal_module.toolbar_tray_service')
+    );
+  }
+
+  public function tray() {
+    return $this->toolbarTrayService->buildTrayContent();
+  }
+
 }

@@ -99,7 +99,7 @@ If you need help with installation or integration, contact your Crownpeak implem
 ---
 
 ##  Legal Notices
-[Repository Title] is an example solution subject to the [MIT license](./LICENSE).
+dqm-drupal-module is an example solution subject to the [MIT license](./LICENSE).
 
 This data connector must not be used for any illegal activities or in ways that could harm Crownpeak or Fredhopper's systems.
 

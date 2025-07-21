@@ -44,6 +44,15 @@ input.dqm-drupal-module-run-quality-check-secondary.button.loading,
   pointer-events: none !important;
 }
 
+input.dqm-drupal-module-run-quality-check.button:focus,
+.dqm-drupal-module-run-quality-check.button:focus,
+input.dqm-drupal-module-run-quality-check-secondary.button:focus,
+.dqm-drupal-module-run-quality-check-secondary.button:focus {
+  outline: 3px solid #005fcc !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #005fcc !important;
+}
+
 .dqm-drupal-module-toolbar-tray {
   justify-content: center;
   display: flex;
@@ -155,7 +164,8 @@ input.dqm-drupal-module-run-quality-check-secondary.button.loading,
   line-height: 1;
   font-weight: normal;
   font-style: normal;
-  margin-block: 0;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .dqm-progress-bar {
@@ -214,8 +224,16 @@ input.dqm-drupal-module-run-quality-check-secondary.button.loading,
   background: #ff5630 !important;
 }
 
-.toolbar-oriented .toolbar-tray-vertical {
+.toolbar-tab
+  #toolbar-item-dqm-drupal-module-tray
+  .toolbar-tray.toolbar-tray-vertical.is-active {
+  width: 18rem !important;
+}
+.toolbar-tab #toolbar-item-dqm-drupal-module-tray .toolbar-tray.toolbar-tray-horizontal.is-active {
   width: 18rem;
+  max-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .dqm-checkpoint-item .checkpoint-icon-title-row {
@@ -225,7 +243,7 @@ input.dqm-drupal-module-run-quality-check-secondary.button.loading,
 }
 
 .checkpoint-title b {
-    font-weight: normal !important;
+  font-weight: normal !important;
 }
 
 .dqm-filter-container {
@@ -239,7 +257,7 @@ input.dqm-drupal-module-run-quality-check-secondary.button.loading,
 }
 
 .dqm-filter-wrapper::before {
-  content: '🔍';
+  content: "🔍";
   position: absolute;
   left: 12px;
   top: 50%;
@@ -291,6 +309,8 @@ input.dqm-drupal-module-run-quality-check-secondary.button.loading,
 
 .dqm-filter-wrapper:hover .dqm-filter-icon {
   color: #b604d4;
+  -webkit-transform: translateY(-50%) scale(1.1);
+  -moz-transform: translateY(-50%) scale(1.1);
   transform: translateY(-50%) scale(1.1);
 }
 
@@ -338,22 +358,22 @@ input.dqm-drupal-module-run-quality-check-secondary.button.loading,
   vertical-align: middle;
 }
 .badge.accessibility {
-  background: #ff5630;
+  background: #006675;
 }
 .badge.seo {
-  background: #ff8b00;
+  background: #2fe8b6;
 }
 .badge.brand {
-  background: #0052cc;
+  background: #3636c5;
 }
 .badge.regulatory {
   background: #008060;
 }
 .badge.legal {
-  background: #6d6d6d;
+  background: #001746;
 }
 .badge.usability {
-  background: #36b37e;
+  background: #cdd1d0;
 }
 .checkpoint-badges {
   display: flex;
