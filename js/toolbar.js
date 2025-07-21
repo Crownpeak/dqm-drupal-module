@@ -4,29 +4,30 @@
   Drupal.behaviors.dqmDrupalModuleToolbar = {
     attach: function (context, settings) {
       try {
-        if (!$(document).data('dqm-drupal-module-events-bound')) {
-          $(document).on('click', '.dqm-drupal-module-run-quality-check', function() {
+        const $document = $(document);
+        if (!$document.data('dqm-drupal-module-events-bound')) {
+          $document.on('click', '.dqm-drupal-module-run-quality-check', function() {
             try {
               runQualityCheck(this, 'content');
             } catch (e) {
               alert('Error running quality check: ' + e.message);
             }
           });
-          $(document).on('click', '.dqm-drupal-module-run-quality-check-secondary', function() {
+          $document.on('click', '.dqm-drupal-module-run-quality-check-secondary', function() {
             try {
               runQualityCheck(this, 'content');
             } catch (e) {
               alert('Error running quality check: ' + e.message);
             }
           });
-          $(document).on('click', '.dqm-drupal-module-scan-url', function() {
+          $document.on('click', '.dqm-drupal-module-scan-url', function() {
             try {
               runQualityCheck(this, 'url');
             } catch (e) {
               alert('Error running URL scan: ' + e.message);
             }
           });
-          $(document).data('dqm-drupal-module-events-bound', true);
+          $document.data('dqm-drupal-module-events-bound', true);
         }
       } catch (e) {
         alert('Error initializing DQM toolbar: ' + e.message);
@@ -36,19 +37,20 @@
 
   function runQualityCheck(buttonElement, method) {
     try {
-      if ($(buttonElement).data('submitting')) {
+      const $button = $(buttonElement);
+      if ($button.data('submitting')) {
         return;
       }
-      $(buttonElement).data('submitting', true);
-      $(buttonElement).addClass('loading');
-      $(buttonElement).prop('disabled', true);
-      const originalText = $(buttonElement).val() || $(buttonElement).text();
-      $(buttonElement).data('original-text', originalText);
+      $button.data('submitting', true);
+      $button.addClass('loading');
+      $button.prop('disabled', true);
+      const originalText = $button.val() || $button.text();
+      $button.data('original-text', originalText);
       const loadingText = 'Running Quality Check...';
-      if ($(buttonElement).is('input')) {
-        $(buttonElement).val(loadingText);
+      if ($button.is('input')) {
+        $button.val(loadingText);
       } else {
-        $(buttonElement).text(loadingText);
+        $button.text(loadingText);
       }
       if (method === 'url') {
         runUrlBasedScan(buttonElement);
@@ -171,16 +173,17 @@
   }
 
   function resetButtonState(buttonElement) {
-    $(buttonElement).data('submitting', false);
-    $(buttonElement).removeClass('loading');
-    $(buttonElement).prop('disabled', false);
+    const $button = $(buttonElement);
+    $button.data('submitting', false);
+    $button.removeClass('loading');
+    $button.prop('disabled', false);
 
-    const originalText = $(buttonElement).data('original-text');
+    const originalText = $button.data('original-text');
     if (originalText) {
-      if ($(buttonElement).is('input')) {
-        $(buttonElement).val(originalText);
+      if ($button.is('input')) {
+        $button.val(originalText);
       } else {
-        $(buttonElement).text(originalText);
+        $button.text(originalText);
       }
     }
   }
