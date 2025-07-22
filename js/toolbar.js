@@ -246,24 +246,36 @@
     const failedCheckpoints = [];
     const topicCounts = {};
 
-    checkpoints.forEach(function (checkpoint) {
+    for (const checkpoint of checkpoints) {
       if (checkpoint.failed === true) {
         failedCheckpoints.push(checkpoint);
       } else {
         passedCount++;
       }
 
-      checkpoint.topics.forEach(function (topic) {
+      for (const topic of checkpoint.topics) {
         if (!topicCounts[topic]) {
-          topicCounts[topic] = {total: 0, passed: 0};
+          topicCounts[topic] = {
+            total: 0,
+            passed: 0,
+            failed: 0,
+            color: topicColors[topic] || '#888',
+            className: topic.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+          };
         }
+
         topicCounts[topic].total++;
-        if (checkpoint.failed !== true) {
+        if (checkpoint.failed === true) {
+          topicCounts[topic].failed++;
+        } else {
           topicCounts[topic].passed++;
         }
-      });
+      }
+    }
 
-    });
+    for (const [key, value] of Object.entries(topicCounts)) {
+      topicCounts[key].percent = value.total > 0 ? Math.round((value.passed / value.total) * 100) : 0;
+    }
 
     const percent = totalCount > 0 ? Math.round((passedCount / totalCount) * 100) : 0;
     let html =
@@ -287,75 +299,60 @@
     </div>`;
 
     // TODO - sort section by topic name
-    if (Object.keys(topicCounts).length > 0) {
-      let topicsHtml = '';
-      Object.keys(topicCounts).forEach(function (topic, index) {
-        const counts = topicCounts[topic];
-        const topicPercent = counts.total > 0 ? Math.round((counts.passed / counts.total) * 100) : 0;
-        const color = topicColors[topic] || '#888';
+    let topicsHtml = '';
+    for (const [name, topic] of Object.entries(topicCounts)) {
 
-        if (index > 0) {
-          topicsHtml += '<hr class="dqm-divider">';
-        }
-
-        topicsHtml += `<div class="dqm-topic-breakdown">
-              <div class="dqm-topic-header">
-                <span class="dqm-topic-badge" style="background:${color}">${topic}</span>
-                <span>${counts.passed}/${counts.total} passed</span>
-              </div>
-              <div class="dqm-progress-bar">
-                <div class="dqm-progress-fill" style="width:${topicPercent}%;background:${color}"></div>
-              </div>
-            </div>`;
-      });
-
-      /*
-          This is the Quality Breakdown section.
-          It displays the breakdown of quality topics and their pass rates.
-       */
-      html += `<div class="dqm-card">
-            <h3>📈 Quality Breakdown</h3>
-            ${topicsHtml}
-          </div>`;
-    }
-
-    if (failedCheckpoints.length > 0) {
-      const uniqueTopics = Array.from(new Set(failedCheckpoints.flatMap(({ topics }) => topics))).sort();
-
-      let topicsFilterHtml = '';
-      if (uniqueTopics.length > 1) {
-        let topicOptionsHtml = '';
-        uniqueTopics.forEach(function(topic) {
-          let count = 0;
-          failedCheckpoints.forEach(function(checkpoint) {
-            if (checkpoint.topics.indexOf(topic) !== -1) {
-              count++;
-            }
-          });
-          topicOptionsHtml += '<option value="' + topic.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '">' + topic + ' (' + count + ')</option>';
-        });
-
-        topicsFilterHtml = `<div class="dqm-filter-container">
-            <select class="dqm-topics-filter" id="dqm-topics-filter">
-                <option value="all">All Topics (${failedCheckpoints.length})</option>
-                ${topicOptionsHtml}
-            </select>
-        </div>`;
+      if (topicsHtml.length > 0) {
+        topicsHtml += '<hr class="dqm-divider">';
       }
 
-      let failedCheckpointsHtml = '';
-      failedCheckpoints.forEach(function (checkpoint, idx) {
-        let topicClasses = checkpoint.topics.map(function(topic) {
-          return 'topic-' + topic.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        }).join(' ');
+      topicsHtml += `<div class="dqm-topic-breakdown">
+            <div class="dqm-topic-header">
+                <span class="dqm-topic-badge" style="background:${topic.color}">${name}</span>
+                <span>${topic.passed}/${topic.total} passed</span>
+            </div>
+            <div class="dqm-progress-bar">
+                <div class="dqm-progress-fill" style="width:${topic.percent}%;background:${topic.color}"></div>
+            </div>
+        </div>`;
+    }
 
+    html += `<div class="dqm-card">
+        <h3>📈 Quality Breakdown</h3>
+        ${topicsHtml}
+    </div>`;
+
+    if (failedCheckpoints.length > 0) {
+
+      let topicsFilterHtml = '';
+      let topicOptionsHtml = '';
+
+      const sortedTopics = Object.keys(topicCounts).sort();
+      for (const topic of sortedTopics) {
+        const topicInfo = topicCounts[topic];
+        if (topicInfo.failed > 0) {
+          const count = topicInfo.total - topicInfo.passed;
+          topicOptionsHtml += `<option value="${topicInfo.className}">${topic} (${count})</option>`;
+        }
+      }
+
+      if (topicOptionsHtml.length > 0) {
+        topicsFilterHtml = `<div class="dqm-filter-container">
+                <select class="dqm-topics-filter" id="dqm-topics-filter">
+                    <option value="all">All Topics (${failedCheckpoints.length})</option>
+                    ${topicOptionsHtml}
+                </select>
+            </div>`;
+      }
+
+      const failedCheckpointsHtml = failedCheckpoints.map((checkpoint, index) => {
         let checkpointBadgesHtml = '';
         if (checkpoint.topics.length > 0) {
-
+          // TODO - remove the need to sort these
           const sortedTopics = checkpoint.topics.slice().sort();
           const badgesHtml = sortedTopics.map(topic => {
-            const badgeClass = (topic || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
-            return '<span class="badge ' + badgeClass + '">' + topic + '</span>';
+            const badgeClassName = topicCounts[topic] ? topicCounts[topic].className : '';
+            return `<span class="badge ${badgeClassName}">${topic}</span>`;
           }).join('');
 
           checkpointBadgesHtml = `<div class="checkpoint-badges" style="display:flex;margin-top:4px;">
@@ -363,16 +360,17 @@
                 </div>`;
         }
 
-        failedCheckpointsHtml += `<div class="dqm-checkpoint-item ${topicClasses}" data-topics="${checkpoint.topics.join(',')}">
+        const topicClasses = checkpoint.topics.map((topic) => 'topic-' + topicCounts[topic].className).join(' ');
+        return `<div class="dqm-checkpoint-item ${topicClasses}" data-topics="${checkpoint.topics.join(',')}">
               <div class="checkpoint-icon-title-row">
-                <div class="checkpoint-icon failed dqm-info-icon" data-idx="${idx}" style="cursor:pointer;">!</div>
+                <div class="checkpoint-icon failed dqm-info-icon" data-idx="${index}" style="cursor:pointer;">!</div>
                 <div>
                   <span class="checkpoint-title">${checkpoint.name || 'Unknown Checkpoint'}</span>
                     ${checkpointBadgesHtml}
                  </div>
               </div>
             </div>`;
-      });
+      }).join('');
 
       html += `<div class="dqm-card">
             <h3>❌ Failed Checkpoints (${failedCheckpoints.length})</h3>
