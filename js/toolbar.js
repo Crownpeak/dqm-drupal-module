@@ -6,25 +6,13 @@
       try {
         const $document = $(document);
         if (!$document.data('dqm-drupal-module-events-bound')) {
-          $document.on('click', '.dqm-drupal-module-run-quality-check', function() {
+          $document.on('click', '.dqm-drupal-module-run-quality-check, .dqm-drupal-module-run-quality-check-secondary, .dqm-drupal-module-scan-url', function () {
+            const method = $(this).hasClass('dqm-drupal-module-scan-url') ? 'url' : 'content';
             try {
-              runQualityCheck(this, 'content');
+              runQualityCheck(this, method);
             } catch (e) {
-              alert('Error running quality check: ' + e.message);
-            }
-          });
-          $document.on('click', '.dqm-drupal-module-run-quality-check-secondary', function() {
-            try {
-              runQualityCheck(this, 'content');
-            } catch (e) {
-              alert('Error running quality check: ' + e.message);
-            }
-          });
-          $document.on('click', '.dqm-drupal-module-scan-url', function() {
-            try {
-              runQualityCheck(this, 'url');
-            } catch (e) {
-              alert('Error running URL scan: ' + e.message);
+              const errorPrefix = method === 'url' ? 'Error running URL scan: ' : 'Error running quality check: ';
+              alert(errorPrefix + e.message);
             }
           });
           $document.data('dqm-drupal-module-events-bound', true);
@@ -41,17 +29,7 @@
       if ($button.data('submitting')) {
         return;
       }
-      $button.data('submitting', true);
-      $button.addClass('loading');
-      $button.prop('disabled', true);
-      const originalText = $button.val() || $button.text();
-      $button.data('original-text', originalText);
-      const loadingText = 'Running Quality Check...';
-      if ($button.is('input')) {
-        $button.val(loadingText);
-      } else {
-        $button.text(loadingText);
-      }
+      prepareButtonState($button);
       if (method === 'url') {
         runUrlBasedScan(buttonElement);
       } else {
@@ -61,6 +39,32 @@
       resetButtonState(buttonElement);
       alert('Error running quality check: ' + e.message);
     }
+  }
+  
+  function performPageScan(requestData, url, buttonElement, assetKey) {
+    $.ajax({
+      url: url,
+      method: 'POST',
+      data: requestData,
+      dataType: 'json',
+      beforeSend: function(xhr, settings) {},
+      success: function (data) {
+        try {
+          handleScanResponse(data, buttonElement, assetKey);
+        } catch (e) {
+          resetButtonState(buttonElement);
+          alert('Error handling scan response: ' + e.message);
+        }
+      },
+      error: function (xhr, status, error) {
+        try {
+          handleScanError(xhr, status, error, buttonElement);
+        } catch (e) {
+          resetButtonState(buttonElement);
+          alert('Error handling scan error: ' + e.message);
+        }
+      }
+    });
   }
 
   function runUrlBasedScan(buttonElement) {
@@ -75,28 +79,7 @@
       if (existingAssetId) {
         requestData.assetId = existingAssetId;
       }
-      $.ajax({
-        url: Drupal.url('dqm-drupal-module/scan-from-url'),
-        method: 'POST',
-        data: requestData,
-        dataType: 'json',
-        success: function (data) {
-          try {
-            handleScanResponse(data, buttonElement, assetKey);
-          } catch (e) {
-            resetButtonState(buttonElement);
-            alert('Error handling scan response: ' + e.message);
-          }
-        },
-        error: function (xhr, status, error) {
-          try {
-            handleScanError(xhr, status, error, buttonElement);
-          } catch (e) {
-            resetButtonState(buttonElement);
-            alert('Error handling scan error: ' + e.message);
-          }
-        }
-      });
+      performPageScan(requestData, Drupal.url('dqm-drupal-module/scan-from-url'), buttonElement, assetKey);
     } catch (e) {
       resetButtonState(buttonElement);
       alert('Error running URL-based scan: ' + e.message);
@@ -105,16 +88,10 @@
 
   function runContentBasedScan(buttonElement) {
     try {
-      let content = '';
-      let extractionMethod = '';
       const isPreviewPage = window.location.href.includes('/node/preview/') || window.location.href.includes('/preview/');
-      if (isPreviewPage) {
-        extractionMethod = 'preview_content_extraction';
-        content = extractPreviewContent();
-      } else {
-        extractionMethod = 'regular_page_extraction';
-        content = extractRegularPageContent();
-      }
+      let content = isPreviewPage ? extractPreviewContent() : extractRegularPageContent();
+      let extractionMethod = isPreviewPage ? 'preview_content_extraction' : 'regular_page_extraction';
+
       if (!content) {
         resetButtonState(buttonElement);
         return;
@@ -128,29 +105,7 @@
       if (existingAssetId) {
         requestData.assetId = existingAssetId;
       }
-      $.ajax({
-        url: Drupal.url('dqm-drupal-module/scan'),
-        method: 'POST',
-        data: requestData,
-        dataType: 'json',
-        beforeSend: function(xhr, settings) {},
-        success: function (data) {
-          try {
-            handleScanResponse(data, buttonElement, assetKey);
-          } catch (e) {
-            resetButtonState(buttonElement);
-            alert('Error handling scan response: ' + e.message);
-          }
-        },
-        error: function (xhr, status, error) {
-          try {
-            handleScanError(xhr, status, error, buttonElement);
-          } catch (e) {
-            resetButtonState(buttonElement);
-            alert('Error handling scan error: ' + e.message);
-          }
-        }
-      });
+      performPageScan(requestData, Drupal.url('dqm-drupal-module/scan'), buttonElement, assetKey);
     } catch (e) {
       resetButtonState(buttonElement);
       alert('Error running content-based scan: ' + e.message);
@@ -172,6 +127,23 @@
     alert('AJAX error: ' + error);
   }
 
+  function setButtonText($button, text) {
+    if ($button.is('input')) {
+      $button.val(text);
+    } else {
+      $button.text(text);
+    }
+  }
+
+  function prepareButtonState($button) {
+    $button.data('submitting', true);
+    $button.addClass('loading');
+    $button.prop('disabled', true);
+    const originalText = $button.val() || $button.text();
+    $button.data('original-text', originalText);
+    setButtonText($button, 'Running Quality Check...');
+  }
+
   function resetButtonState(buttonElement) {
     const $button = $(buttonElement);
     $button.data('submitting', false);
@@ -180,11 +152,7 @@
 
     const originalText = $button.data('original-text');
     if (originalText) {
-      if ($button.is('input')) {
-        $button.val(originalText);
-      } else {
-        $button.text(originalText);
-      }
+      setButtonText($button, originalText);
     }
   }
 
@@ -501,7 +469,6 @@
     }
   }
 
-
   function extractPreviewContent() {
     const contentSelectors = [
       '.node-preview',
@@ -528,7 +495,6 @@
       return extractCleanBodyContent();
     }
     const contentClone = contentElement.cloneNode(true);
-
     removeAdminElements(contentClone);
     return createCleanHtmlStructure(contentClone.outerHTML);
   }
