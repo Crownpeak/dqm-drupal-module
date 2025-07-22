@@ -221,7 +221,7 @@
   function normaliseCheckpoints(checkpoints) {
     return checkpoints.map(cp => ({
       ...cp,
-      topics: (cp?.topics ?? [])
+      topics: (cp?.topics ?? []).sort()
     }));
   }
 
@@ -276,6 +276,7 @@
     for (const [key, value] of Object.entries(topicCounts)) {
       topicCounts[key].percent = value.total > 0 ? Math.round((value.passed / value.total) * 100) : 0;
     }
+    const sortedTopics = Object.keys(topicCounts).sort();
 
     const percent = totalCount > 0 ? Math.round((passedCount / totalCount) * 100) : 0;
     let html =
@@ -298,10 +299,10 @@
       </div>
     </div>`;
 
-    // TODO - sort section by topic name
-    let topicsHtml = '';
-    for (const [name, topic] of Object.entries(topicCounts)) {
 
+    let topicsHtml = '';
+    for (const name of sortedTopics) {
+      const topic = topicCounts[name];
       if (topicsHtml.length > 0) {
         topicsHtml += '<hr class="dqm-divider">';
       }
@@ -323,11 +324,9 @@
     </div>`;
 
     if (failedCheckpoints.length > 0) {
-
       let topicsFilterHtml = '';
       let topicOptionsHtml = '';
 
-      const sortedTopics = Object.keys(topicCounts).sort();
       for (const topic of sortedTopics) {
         const topicInfo = topicCounts[topic];
         if (topicInfo.failed > 0) {
@@ -345,32 +344,30 @@
             </div>`;
       }
 
-      const failedCheckpointsHtml = failedCheckpoints.map((checkpoint, index) => {
+      let failedCheckpointsHtml = '';
+      for (const checkpoint of failedCheckpoints) {
         let checkpointBadgesHtml = '';
         if (checkpoint.topics.length > 0) {
-          // TODO - remove the need to sort these
-          const sortedTopics = checkpoint.topics.slice().sort();
-          const badgesHtml = sortedTopics.map(topic => {
+
+          const badgesHtml = checkpoint.topics.map(topic => {
             const badgeClassName = topicCounts[topic] ? topicCounts[topic].className : '';
             return `<span class="badge ${badgeClassName}">${topic}</span>`;
           }).join('');
 
-          checkpointBadgesHtml = `<div class="checkpoint-badges" style="display:flex;margin-top:4px;">
-                    ${badgesHtml}
-                </div>`;
+          checkpointBadgesHtml = `<div class="checkpoint-badges" style="display:flex;margin-top:4px;">${badgesHtml}</div>`;
         }
 
         const topicClasses = checkpoint.topics.map((topic) => 'topic-' + topicCounts[topic].className).join(' ');
-        return `<div class="dqm-checkpoint-item ${topicClasses}" data-topics="${checkpoint.topics.join(',')}">
+        failedCheckpointsHtml += `<div class="dqm-checkpoint-item ${topicClasses}" data-topics="${checkpoint.topics.join(',')}">
               <div class="checkpoint-icon-title-row">
-                <div class="checkpoint-icon failed dqm-info-icon" data-idx="${index}" style="cursor:pointer;">!</div>
+                <div class="checkpoint-icon failed dqm-info-icon" data-id="${checkpoint.id}" style="cursor:pointer;">!</div>
                 <div>
                   <span class="checkpoint-title">${checkpoint.name || 'Unknown Checkpoint'}</span>
                     ${checkpointBadgesHtml}
                  </div>
               </div>
             </div>`;
-      }).join('');
+      }
 
       html += `<div class="dqm-card">
             <h3>❌ Failed Checkpoints (${failedCheckpoints.length})</h3>
@@ -391,11 +388,8 @@
       const passedDegrees = Math.round((percentage / 100) * 360);
       const failedDegrees = 360 - passedDegrees;
 
-      if (passedDegrees > 0) {
-        pieChart.style.background = 'conic-gradient(#b604d4 0deg ' + passedDegrees + 'deg, #303747 ' + passedDegrees + 'deg 360deg)';
-      } else {
-        pieChart.style.background = '#303747';
-      }
+      const background = (passedDegrees > 0) ? `conic-gradient(#b604d4 0deg ${passedDegrees}deg, #303747 ${passedDegrees}deg 360deg)` : `#303747`;
+      pieChart.style.background = background;
     }
 
     let modal = document.getElementById('dqm-checkpoint-modal');
@@ -403,19 +397,21 @@
       modal = document.createElement('div');
       modal.id = 'dqm-checkpoint-modal';
       modal.className = 'dqm-modal';
-      modal.style.display = 'none';
-      modal.style.position = 'fixed';
-      modal.style.zIndex = '9999';
-      modal.style.background = '#fff';
-      modal.style.boxShadow = '0 4px 24px rgba(0,0,0,0.18)';
-      modal.style.borderRadius = '8px';
-      modal.style.padding = '1.5em 2em 1.5em 1.5em';
-      modal.style.minWidth = '340px';
-      modal.style.maxWidth = '420px';
-      modal.style.maxHeight = '70vh';
-      modal.style.overflowY = 'auto';
-      modal.style.transition = 'opacity 0.2s';
-      modal.style.opacity = '1';
+      Object.assign(modal.style, {
+        display: 'none',
+        position: 'fixed',
+        zIndex: '9999',
+        background: '#fff',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.18)',
+        borderRadius: '8px',
+        padding: '1.5em 2em 1.5em 1.5em',
+        minWidth: '340px',
+        maxWidth: '420px',
+        maxHeight: '70vh',
+        overflowY: 'auto',
+        transition: 'opacity 0.2s',
+        opacity: '1'
+      });
       document.body.appendChild(modal);
     }
 
@@ -440,17 +436,19 @@
         }).join(' ');
         modal.appendChild(topicsDiv);
       }
-      modal.style.display = 'block';
-      modal.style.opacity = '1';
-      modal.style.top = '32px';
-      modal.style.left = '32px';
-      modal.style.right = '';
+      Object.assign(modal.style, {
+        display: 'block',
+        opacity: '1',
+        top: '32px',
+        left: '32px',
+        right: ''
+      });
     }
     const infoIcons = container.querySelectorAll('.dqm-info-icon');
     infoIcons.forEach(function(icon) {
       icon.addEventListener('mouseenter', function(e) {
-        const idx = parseInt(icon.getAttribute('data-idx'), 10);
-        const cp = failedCheckpoints[idx];
+        const id = icon.getAttribute('data-id');
+        const cp = failedCheckpoints.find(cp => cp.id === id);
         showModal(cp);
       });
       icon.addEventListener('mouseleave', function(e) {
