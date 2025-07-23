@@ -395,12 +395,12 @@
         desc.textContent = cp.description;
         modal.appendChild(desc);
       }
-      if (Array.isArray(cp.topics) && cp.topics.length > 0) {
+      if (cp.topics.length > 0) {
         const topicsDiv = document.createElement('div');
         topicsDiv.className = 'dqm-modal-topics';
-        topicsDiv.innerHTML = cp.topics.map(function(topic) {
-          const badgeClass = (topic || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
-          return '<span class="badge ' + badgeClass + '">' + topic + '</span>';
+        topicsDiv.innerHTML = cp.topics.map(topic => {
+          const badgeClassName = topicCounts[topic] ? topicCounts[topic].className : '';
+          return `<span class="badge ${badgeClassName}">${topic}</span>`;
         }).join(' ');
         modal.appendChild(topicsDiv);
       }
@@ -413,18 +413,20 @@
       });
     }
     const infoIcons = container.querySelectorAll('.dqm-info-icon');
-    infoIcons.forEach(function(icon) {
+    for (const icon of infoIcons) {
       icon.addEventListener('mouseenter', function(e) {
         const id = icon.getAttribute('data-id');
         const cp = failedCheckpoints.find(cp => cp.id === id);
-        showModal(cp);
+        if (cp) {
+          showModal(cp);
+        }
       });
       icon.addEventListener('mouseleave', function(e) {
         setTimeout(function() {
           modal.style.display = 'none';
         }, 200);
       });
-    });
+    }
     modal.addEventListener('mouseenter', function() {
       modal.style.display = 'block';
     });
@@ -555,16 +557,16 @@
 
     let removedCount = 0;
 
-    adminSelectors.forEach(function(selector) {
+    for(const selector of adminSelectors) {
       const elements = element.querySelectorAll(selector);
-      elements.forEach(function(el) {
+      for (const el of elements) {
         el.remove();
         removedCount++;
-      });
-    });
+      }
+    }
 
     const allElements = element.querySelectorAll('*');
-    allElements.forEach(function(el) {
+    for(const el of allElements) {
       if (el.className && typeof el.className === 'string') {
         if (el.className.includes('admin') ||
             el.className.includes('toolbar') ||
@@ -589,7 +591,7 @@
         el.removeAttribute('data-quickedit-entity-id');
         el.removeAttribute('data-contextual-id');
       }
-    });
+    }
 
     return element;
   }
