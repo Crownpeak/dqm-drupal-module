@@ -193,7 +193,7 @@
     }));
   }
 
-  export function displayQualityResults(data, container) {
+  function displayQualityResults(data, container) {
     if (!data || !data.checkpoints || !Array.isArray(data.checkpoints)) {
       container.innerHTML = '<div class="dqm-card"><p>No quality results available.</p></div>';
       return;
