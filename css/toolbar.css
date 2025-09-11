@@ -7,7 +7,9 @@
 input.dqm-drupal-module-run-quality-check.button,
 .dqm-drupal-module-run-quality-check.button,
 input.dqm-drupal-module-run-quality-check-secondary.button,
-.dqm-drupal-module-run-quality-check-secondary.button{
+.dqm-drupal-module-run-quality-check-secondary.button,
+input.dqm-drupal-module-page-highlight.button,
+.dqm-drupal-module-page-highlight.button {
   background: #b604d4 !important;
   border-color: #b604d4 !important;
   color: white !important;
@@ -32,10 +34,14 @@ input.dqm-drupal-module-run-quality-check.button:disabled,
 .dqm-drupal-module-run-quality-check.button:disabled,
 input.dqm-drupal-module-run-quality-check-secondary.button:disabled,
 .dqm-drupal-module-run-quality-check-secondary.button:disabled,
+input.dqm-drupal-module-page-highlight.button:disabled,
+.dqm-drupal-module-page-highlight.button:disabled,
 input.dqm-drupal-module-run-quality-check.button.loading,
 .dqm-drupal-module-run-quality-check.button.loading,
 input.dqm-drupal-module-run-quality-check-secondary.button.loading,
-.dqm-drupal-module-run-quality-check-secondary.button.loading {
+.dqm-drupal-module-run-quality-check-secondary.button.loading,
+input.dqm-drupal-module-page-highlight.button.loading,
+.dqm-drupal-module-page-highlight.button.loading {
   background: #cccccc !important;
   border-color: #cccccc !important;
   color: #666666 !important;
@@ -47,7 +53,9 @@ input.dqm-drupal-module-run-quality-check-secondary.button.loading,
 input.dqm-drupal-module-run-quality-check.button:focus,
 .dqm-drupal-module-run-quality-check.button:focus,
 input.dqm-drupal-module-run-quality-check-secondary.button:focus,
-.dqm-drupal-module-run-quality-check-secondary.button:focus {
+.dqm-drupal-module-run-quality-check-secondary.button:focus,
+input.dqm-drupal-module-page-highlight.button:focus,
+.dqm-drupal-module-page-highlight.button:focus {
   outline: 3px solid #005fcc !important;
   outline-offset: 2px !important;
   box-shadow: 0 0 0 2px #fff, 0 0 0 4px #005fcc !important;
@@ -60,6 +68,12 @@ input.dqm-drupal-module-run-quality-check-secondary.button:focus,
 
 .dqm-drupal-module-toolbar-tray {
   flex-direction: column;
+}
+
+input.dqm-drupal-module-page-highlight.button.active,
+.dqm-drupal-module-page-highlight.button.active {
+  background: #7a028d !important;
+  border-color: #7a028d !important;
 }
 
 .dqm-card {

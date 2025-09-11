@@ -6,6 +6,7 @@ use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Drupal\dqm_drupal_module\Service\ScanService;
 
 
@@ -42,6 +43,42 @@ class ScanController extends ControllerBase {
     $config = \Drupal::config('dqm_drupal_module.settings');
     $api_key = $config->get('api_key');
     $result = $this->scanService->getResults($api_key, $assetId, $logger);
+    return new JsonResponse($result);
+  }
+
+  public function pageHighlight(Request $request) {
+    $logger = \Drupal::logger('dqm_drupal_module');
+    $config = \Drupal::config('dqm_drupal_module.settings');
+    $api_key = $config->get('api_key');
+    $asset_id = $request->request->get('assetId');
+    
+    if (empty($asset_id)) {
+      $logger->error('No asset ID provided for page highlight.');
+      throw new HttpException(400, 'No asset ID provided.');
+    }
+    
+    $result = $this->scanService->getPageHighlight($api_key, $asset_id, $logger);
+    return new JsonResponse($result);
+  }
+  
+  public function getPageHighlight($assetId) {
+    $logger = \Drupal::logger('dqm_drupal_module');
+    $config = \Drupal::config('dqm_drupal_module.settings');
+    $api_key = $config->get('api_key');
+    
+    if (empty($assetId)) {
+      $logger->error('No asset ID provided for page highlight.');
+      throw new HttpException(400, 'No asset ID provided.');
+    }
+    
+    $result = $this->scanService->getPageHighlight($api_key, $assetId, $logger);
+    
+    if (isset($result['success']) && $result['success'] && isset($result['html'])) {
+      $response = new Response($result['html']);
+      $response->headers->set('Content-Type', 'text/html');
+      return $response;
+    }
+    
     return new JsonResponse($result);
   }
 

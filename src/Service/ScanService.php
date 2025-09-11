@@ -108,6 +108,48 @@ class ScanService {
     }
   }
 
+  public function getPageHighlight($api_key, $assetId, $logger) {
+    if (empty($assetId)) {
+      return ['success' => false, 'message' => 'No asset ID provided.'];
+    }
+    $endpoint = 'https://api.crownpeak.net/dqm-cms/v1/assets/' . $assetId . '/pagehighlight/all?apiKey=' . $api_key . '&visibility=public';
+    try {
+      $curl = curl_init();
+      curl_setopt_array($curl, [
+        CURLOPT_URL => $endpoint,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'GET',
+        CURLOPT_HTTPHEADER => [
+          'x-api-key: ' . $api_key,
+        ],
+      ]);
+      $response = curl_exec($curl);
+      $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+      $error = curl_error($curl);
+      curl_close($curl);
+      
+      if ($error) {
+        $logger->error('cURL error during page highlight: @error', ['@error' => $error]);
+        return ['success' => false, 'message' => 'cURL error: ' . $error];
+      }
+      
+      if ($httpCode >= 200 && $httpCode < 300) {
+        return ['success' => true, 'html' => $response];
+      } else {
+        $logger->error('HTTP error during page highlight: @code - @response', ['@code' => $httpCode, '@response' => $response]);
+        return ['success' => false, 'message' => 'HTTP ' . $httpCode . ': ' . $response];
+      }
+    } catch (\Exception $e) {
+      $logger->error('Exception during page highlight: @msg', ['@msg' => $e->getMessage()]);
+      return ['success' => false, 'message' => $e->getMessage()];
+    }
+  }
+  
   public function getResults($api_key, $assetId, $logger) {
     if (empty($assetId)) {
       return ['success' => false, 'message' => 'No asset ID provided.'];

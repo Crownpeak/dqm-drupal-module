@@ -3,4 +3,7 @@ toolbar:
     theme:
       css/toolbar.css: {}
   js:
-    js/toolbar.js: {} 
+    js/toolbar.js: {}
+  dependencies:
+    - core/drupalSettings
+    - core/jquery

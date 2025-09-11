@@ -37,3 +37,11 @@ dqm_drupal_module.results:
   requirements:
     _permission: 'administer dqm drupal module'
   methods: [GET]
+
+dqm_drupal_module.highlight:
+  path: '/dqm-drupal-module/highlight/{assetId}'
+  defaults:
+    _controller: '\Drupal\dqm_drupal_module\Controller\ScanController::getPageHighlight'
+  requirements:
+    _permission: 'administer dqm drupal module'
+  methods: [GET]

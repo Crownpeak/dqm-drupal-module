@@ -15,6 +15,15 @@
               alert(errorPrefix + e.message);
             }
           });
+          
+          $document.on('click', '.dqm-drupal-module-page-highlight', function() {
+            try {
+              togglePageHighlight(this);
+            } catch (e) {
+              alert('Error toggling page highlight: ' + e.message);
+            }
+          });
+          
           $document.data('dqm-drupal-module-events-bound', true);
         }
       } catch (e) {
@@ -248,7 +257,8 @@
 
     const percent = totalCount > 0 ? Math.round((passedCount / totalCount) * 100) : 0;
     let html =
-        `<div class="dqm-card">
+        `<button class="dqm-drupal-module-page-highlight button">Page Highlight</button>
+        <div class="dqm-card">
       <h3>📊 Quality Overview</h3>
       <div class="dqm-chart-container">
         <div class="dqm-pie-chart" data-percent="${percent}">
@@ -469,6 +479,16 @@
         }
       });
     }
+    const pageHighlightBtn = container.querySelector('.dqm-drupal-module-page-highlight');
+    if (pageHighlightBtn) {
+      pageHighlightBtn.addEventListener('click', function() {
+        try {
+          togglePageHighlight(this);
+        } catch (e) {
+          alert('Error toggling page highlight: ' + e.message);
+        }
+      });
+    }
   }
 
   function extractPreviewContent() {
@@ -614,5 +634,136 @@
         </head>
         <body>${bodyContent}</body>
     </html>`;
+  }
+  
+  function addLocalHighlighting() {
+    if (!$('#dqm-highlight-styles').length) {
+      $('head').append('<style id="dqm-highlight-styles">' +
+        '.dqm-element-highlight { outline: 2px dashed #b604d4 !important; outline-offset: 2px !important; }' +
+        '.dqm-element-highlight:hover { outline: 3px solid #b604d4 !important; }' +
+        '</style>');
+    }
+    $('main h1, main h2, main h3, main h4, main h5, main h6, main p, main img, main figure, main table, main ul, main ol, article h1, article h2, article h3, article h4, article h5, article h6, article p, article img, article figure, article table, article ul, article ol').addClass('dqm-element-highlight');
+  }
+
+  function togglePageHighlight(buttonElement) {
+    try {
+      const $button = $(buttonElement);
+      const isHighlightActive = $button.hasClass('active');
+      
+      if (isHighlightActive) {
+        $('.dqm-element-highlight').each(function() {
+          $(this).removeClass('dqm-element-highlight');
+        });
+        
+        $('#dqm-highlight-overlay').remove();
+        $('#dqm-highlight-styles').remove();
+        
+        $button.removeClass('active');
+        $button.val(Drupal.t('Page Highlight'));
+      } else {
+        $button.prop('disabled', true);
+        
+        const currentUrl = window.location.href;
+        const assetKey = 'dqm_asset_id_' + btoa(currentUrl);
+        const existingAssetId = localStorage.getItem(assetKey);
+        
+        if (!existingAssetId) {
+          addLocalHighlighting();
+          $button.addClass('active');
+          $button.val(Drupal.t('Page Highlighting'));
+          $button.prop('disabled', false); 
+          return;
+        }
+        
+        let apiKey;
+        try {
+          if (drupalSettings && drupalSettings.dqmDrupalModule && drupalSettings.dqmDrupalModule.apiKey) {
+            apiKey = drupalSettings.dqmDrupalModule.apiKey;
+          } else {
+            console.warn('API key not found in drupalSettings');
+            addLocalHighlighting();
+            $button.addClass('active');
+            $button.val(Drupal.t('Page Highlighting'));
+            $button.prop('disabled', false);
+            return;
+          }
+        } catch(e) {
+          console.warn('Error accessing drupalSettings:', e);
+          addLocalHighlighting();
+          $button.addClass('active');
+          $button.val(Drupal.t('Remove Highlight'));
+          resetButtonState($button);
+          return;
+        }
+        
+        $.ajax({
+          url: Drupal.url('dqm-drupal-module/highlight/' + existingAssetId),
+          method: 'GET',
+          data: {
+            visibility: 'public'
+          },
+          contentType: 'text/html',
+          success: function(response) {
+            try {
+              if (!$('#dqm-highlight-styles').length) {
+                $('head').append('<style id="dqm-highlight-styles">' +
+                  '.dqm-element-highlight { outline: 2px dashed #b604d4 !important; outline-offset: 2px !important; }' +
+                  '.dqm-element-highlight:hover { outline: 3px solid #b604d4 !important; }' +
+                  '</style>');
+              }
+              
+              const tempDiv = document.createElement('div');
+              tempDiv.style.display = 'none';
+              tempDiv.innerHTML = response;
+              document.body.appendChild(tempDiv);
+              
+              let foundElements = false;
+              
+              $(tempDiv).find('.dqm-element-highlight').each(function() {
+                const tagName = this.tagName.toLowerCase();
+                const text = $(this).text().trim();
+                
+                if (text) {
+                  $(`${tagName}`).each(function() {
+                    if ($(this).text().trim() === text) {
+                      $(this).addClass('dqm-element-highlight');
+                      foundElements = true;
+                    }
+                  });
+                }
+              });
+              
+              if (!foundElements) {
+                console.log('No matching elements found, applying fallback highlighting');
+                $('main h1, main h2, main h3, main h4, main h5, main h6, main p, main img, main figure, main table, main ul, main ol, article h1, article h2, article h3, article h4, article h5, article h6, article p, article img, article figure, article table, article ul, article ol').addClass('dqm-element-highlight');
+              }
+              
+              document.body.removeChild(tempDiv);
+              
+              $button.addClass('active');
+              $button.val(Drupal.t('Page Highlighting'));
+            } catch (e) {
+              console.error('Error processing highlight response:', e);
+              alert('Error processing highlight data: ' + e.message);
+              $('main h1, main h2, main h3, main h4, main h5, main h6, main p, main img, main figure, main table, main ul, main ol, article h1, article h2, article h3, article h4, article h5, article h6, article p, article img, article figure, article table, article ul, article ol').addClass('dqm-element-highlight');
+            }
+            $button.prop('disabled', false); 
+          },
+          error: function(xhr, status, error) {
+            console.error('API error:', xhr, status, error);
+            console.log('Falling back to local highlighting');
+            addLocalHighlighting();
+            $button.addClass('active');
+            $button.val(Drupal.t('Page Highlighting'));
+            $button.prop('disabled', false);
+          }
+        });
+      }
+    } catch (e) {
+      console.error('Error in togglePageHighlight:', e);
+      alert('Error toggling page highlight: ' + e.message);
+      resetButtonState($(buttonElement));
+    }
   }
 })(jQuery, Drupal, window.once);
