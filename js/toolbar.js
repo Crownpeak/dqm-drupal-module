@@ -182,13 +182,17 @@
       dataType: 'json',
       success: function (response) {
         resetButtonState(buttonElement);
-        if (response.success && response.data) {
+        if (response && response.success && response.data && response.data.html) {
+          resultsContainer.innerHTML = response.data.html;
+        } else if (response.success && response.data) {
           displayQualityResults(response.data, resultsContainer);
         } else {
+          console.warn('[DQM] Failed to load quality results:', response.message || 'Unknown error');
           resultsContainer.innerHTML = '<div class="dqm-card"><p>Failed to load quality results: ' + (response.message || 'Unknown error') + '</p></div>';
         }
       },
       error: function (xhr, status, error) {
+        console.error('[DQM] AJAX error loading quality results:', error, xhr, status);
         resetButtonState(buttonElement);
         resultsContainer.innerHTML = '<div class="dqm-card"><p>Error loading quality results: ' + error + '</p></div>';
       }
@@ -250,33 +254,32 @@
       }
     }
 
+
     for (const [key, value] of Object.entries(topicCounts)) {
       topicCounts[key].percent = value.total > 0 ? Math.round((value.passed / value.total) * 100) : 0;
     }
-    const sortedTopics = Object.keys(topicCounts).sort();
 
+    const sortedTopics = Object.keys(topicCounts).sort();
     const percent = totalCount > 0 ? Math.round((passedCount / totalCount) * 100) : 0;
     let html =
-        `<button class="dqm-drupal-module-page-highlight button">Page Highlight</button>
-        <div class="dqm-card">
-      <h3>📊 Quality Overview</h3>
-      <div class="dqm-chart-container">
-        <div class="dqm-pie-chart" data-percent="${percent}">
-          <div class="percent-label">${percent}%</div>
-        </div>
-        <div class="dqm-legend">
-          <div class="dqm-legend-item">
-            <div class="dqm-legend-color passed"></div>
-            <span>Passed (${passedCount})</span>
+      `<div class="dqm-card">
+        <h3>📊 Quality Overview</h3>
+        <div class="dqm-chart-container">
+          <div class="dqm-pie-chart" data-percent="${percent}">
+            <div class="percent-label">${percent}%</div>
           </div>
-          <div class="dqm-legend-item">
-            <div class="dqm-legend-color failed"></div>
-            <span>Failed (${totalCount - passedCount})</span>
+          <div class="dqm-legend">
+            <div class="dqm-legend-item">
+              <div class="dqm-legend-color passed"></div>
+              <span>Passed (${passedCount})</span>
+            </div>
+            <div class="dqm-legend-item">
+              <div class="dqm-legend-color failed"></div>
+              <span>Failed (${totalCount - passedCount})</span>
+            </div>
           </div>
         </div>
-      </div>
-    </div>`;
-
+      </div>`;
 
     let topicsHtml = '';
     for (const name of sortedTopics) {
@@ -284,21 +287,20 @@
       if (topicsHtml.length > 0) {
         topicsHtml += '<hr class="dqm-divider">';
       }
-
       topicsHtml += `<div class="dqm-topic-breakdown">
-            <div class="dqm-topic-header">
-                <span class="dqm-topic-badge" style="background:${topic.color}">${name}</span>
-                <span>${topic.passed}/${topic.total} passed</span>
-            </div>
-            <div class="dqm-progress-bar">
-                <div class="dqm-progress-fill" style="width:${topic.percent}%;background:${topic.color}"></div>
-            </div>
-        </div>`;
+        <div class="dqm-topic-header">
+          <span class="dqm-topic-badge" style="background:${topic.color}">${name}</span>
+          <span>${topic.passed}/${topic.total} passed</span>
+        </div>
+        <div class="dqm-progress-bar">
+          <div class="dqm-progress-fill" style="width:${topic.percent}%;background:${topic.color}"></div>
+        </div>
+      </div>`;
     }
 
     html += `<div class="dqm-card">
-        <h3>📈 Quality Breakdown</h3>
-        ${topicsHtml}
+      <h3>📈 Quality Breakdown</h3>
+      ${topicsHtml}
     </div>`;
 
     if (failedCheckpoints.length > 0) {
@@ -315,48 +317,155 @@
 
       if (topicOptionsHtml.length > 0) {
         topicsFilterHtml = `<div class="dqm-filter-container">
-                <select class="dqm-topics-filter" id="dqm-topics-filter">
-                    <option value="all">All Topics (${failedCheckpoints.length})</option>
-                    ${topicOptionsHtml}
-                </select>
-            </div>`;
+          <select class="dqm-topics-filter" id="dqm-topics-filter">
+            <option value="all">All Topics (${failedCheckpoints.length})</option>
+            ${topicOptionsHtml}
+          </select>
+        </div>`;
       }
 
       let failedCheckpointsHtml = '';
       for (const checkpoint of failedCheckpoints) {
         let checkpointBadgesHtml = '';
         if (checkpoint.topics.length > 0) {
-
           const badgesHtml = checkpoint.topics.map(topic => {
             const badgeClassName = topicCounts[topic] ? topicCounts[topic].className : '';
             return `<span class="badge ${badgeClassName}">${topic}</span>`;
           }).join('');
-
           checkpointBadgesHtml = `<div class="checkpoint-badges" style="display:flex;margin-top:4px;">${badgesHtml}</div>`;
         }
-
         const topicClasses = checkpoint.topics.map((topic) => 'topic-' + topicCounts[topic].className).join(' ');
-        failedCheckpointsHtml += `<div class="dqm-checkpoint-item ${topicClasses}" data-topics="${checkpoint.topics.join(',')}">
-              <div class="checkpoint-icon-title-row">
-                <div class="checkpoint-icon failed dqm-info-icon" data-id="${checkpoint.id}" style="cursor:pointer;">!</div>
-                <div>
-                  <span class="checkpoint-title">${checkpoint.name || 'Unknown Checkpoint'}</span>
-                    ${checkpointBadgesHtml}
-                 </div>
-              </div>
-            </div>`;
+        failedCheckpointsHtml += `<div class="dqm-checkpoint-item ${topicClasses}" data-topics="${checkpoint.topics.join(',')}" data-error-id="${checkpoint.id}">
+          <div class="checkpoint-icon-title-row">
+            <div class="checkpoint-icon failed dqm-info-icon" data-id="${checkpoint.id}" style="cursor:pointer;">!</div>
+            <div>
+              <span class="checkpoint-title">${checkpoint.name || 'Unknown Checkpoint'}</span>
+              ${checkpointBadgesHtml}
+            </div>
+          </div>
+        </div>`;
       }
 
       html += `<div class="dqm-card">
-            <h3>❌ Failed Checkpoints (${failedCheckpoints.length})</h3>
-            ${topicsFilterHtml}
-            <div class="dqm-checkpoints-list" id="dqm-checkpoints-list">
-                ${failedCheckpointsHtml}
-            </div>
-        </div>`;
-
+        <h3>❌ Failed Checkpoints (${failedCheckpoints.length})</h3>
+        ${topicsFilterHtml}
+        <div class="dqm-checkpoints-list" id="dqm-checkpoints-list">
+          ${failedCheckpointsHtml}
+        </div>
+      </div>`;
     }
     html += '<button class="dqm-drupal-module-run-quality-check-secondary button">Run Quality Check</button>';
+
+    setTimeout(function() {
+      const checkpointItems = container.querySelectorAll('.dqm-checkpoint-item[data-error-id]');
+      checkpointItems.forEach(function(item) {
+        item.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const isActive = this.classList.contains('active');
+          if (isActive) {
+            this.classList.remove('active');
+            document.querySelectorAll('.dqm-element-highlight').forEach(function(el) {
+              el.classList.remove('dqm-element-highlight');
+              if (el.hasAttribute('data-dqm-original-style')) {
+                el.setAttribute('style', el.getAttribute('data-dqm-original-style'));
+                el.removeAttribute('data-dqm-original-style');
+              } else {
+                el.removeAttribute('style');
+              }
+            });
+            return;
+          }
+          checkpointItems.forEach(function(i) { i.classList.remove('active'); });
+          this.classList.add('active');
+          document.querySelectorAll('.dqm-element-highlight').forEach(function(el) {
+            el.classList.remove('dqm-element-highlight');
+            if (el.hasAttribute('data-dqm-original-style')) {
+              el.setAttribute('style', el.getAttribute('data-dqm-original-style'));
+              el.removeAttribute('data-dqm-original-style');
+            } else {
+              el.removeAttribute('style');
+            }
+          });
+          const errorId = this.getAttribute('data-error-id');
+          if (!errorId) return;
+          const assetKey = 'dqm_asset_id_' + btoa(window.location.href);
+          const assetId = localStorage.getItem(assetKey);
+          if (!assetId) {
+            alert('No asset ID found for this page. Please run a quality check first.');
+            return;
+          }
+          $.ajax({
+            url: Drupal.url('dqm-drupal-module/error-highlight/' + assetId + '/' + errorId),
+            method: 'GET',
+            dataType: 'json',
+            success: function(response) {
+              if (typeof response === 'object' && response !== null && response.message) {
+                var lowerMsg = response.message.toLowerCase().trim();
+                if (lowerMsg.includes('unsupported for checkpoint')) {
+                  alert('Highlighting is unsupported for this specific checkpoint.');
+                  return;
+                } else if (lowerMsg.includes('unsupported')) {
+                  alert(response.message);
+                  return;
+                }
+              }
+              if (!response.success || !response.html) {
+                alert('Failed to fetch highlight for this error.');
+                return;
+              }
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = response.html;
+              const highlightEl = tempDiv.querySelector('[style*="background:yellow"], [style*="background: yellow"]');
+              if (highlightEl) {
+                const tag = highlightEl.tagName;
+                const text = highlightEl.textContent.trim();
+                const style = highlightEl.getAttribute('style');
+                let found = false;
+                let candidates = [];
+                document.querySelectorAll(tag).forEach(function(el) {
+                  if (el.textContent.trim() === text) {
+                    candidates.push(el);
+                  }
+                });
+                if (candidates.length > 0) {
+                  let innermost = candidates.reduce(function(a, b) {
+                    return a.childElementCount > b.childElementCount ? b : a;
+                  });
+                  if (!innermost.hasAttribute('data-dqm-original-style')) {
+                    innermost.setAttribute('data-dqm-original-style', innermost.getAttribute('style') || '');
+                  }
+                  innermost.setAttribute('style', style || '');
+                  innermost.classList.add('dqm-element-highlight');
+                  found = true;
+                }
+                if (!found) {
+                  alert('Could not find the matching content to highlight on this page.');
+                }
+              } else {
+                alert('No highlightable element found in the API response.');
+              }
+            },
+            error: function(xhr) {
+              let msg = 'Failed to fetch highlight for this error.';
+              if (xhr && xhr.status === 400 && xhr.responseText) {
+                try {
+                  var errObj = JSON.parse(xhr.responseText);
+                  if (errObj && errObj.message) {
+                    var lowerMsg = errObj.message.toLowerCase().trim();
+                    if (lowerMsg.includes('unsupported for checkpoint')) {
+                      msg = 'Highlighting is unsupported for this specific checkpoint.';
+                    } else if (lowerMsg.includes('unsupported')) {
+                      msg = errObj.message;
+                    }
+                  }
+                } catch (e) {}
+              }
+              alert(msg);
+            }
+          });
+        });
+      });
+    }, 0);
 
     container.innerHTML = html;
 

@@ -7,9 +7,7 @@
 input.dqm-drupal-module-run-quality-check.button,
 .dqm-drupal-module-run-quality-check.button,
 input.dqm-drupal-module-run-quality-check-secondary.button,
-.dqm-drupal-module-run-quality-check-secondary.button,
-input.dqm-drupal-module-page-highlight.button,
-.dqm-drupal-module-page-highlight.button {
+.dqm-drupal-module-run-quality-check-secondary.button {
   background: #b604d4 !important;
   border-color: #b604d4 !important;
   color: white !important;
@@ -34,14 +32,10 @@ input.dqm-drupal-module-run-quality-check.button:disabled,
 .dqm-drupal-module-run-quality-check.button:disabled,
 input.dqm-drupal-module-run-quality-check-secondary.button:disabled,
 .dqm-drupal-module-run-quality-check-secondary.button:disabled,
-input.dqm-drupal-module-page-highlight.button:disabled,
-.dqm-drupal-module-page-highlight.button:disabled,
 input.dqm-drupal-module-run-quality-check.button.loading,
 .dqm-drupal-module-run-quality-check.button.loading,
 input.dqm-drupal-module-run-quality-check-secondary.button.loading,
-.dqm-drupal-module-run-quality-check-secondary.button.loading,
-input.dqm-drupal-module-page-highlight.button.loading,
-.dqm-drupal-module-page-highlight.button.loading {
+.dqm-drupal-module-run-quality-check-secondary.button.loading{
   background: #cccccc !important;
   border-color: #cccccc !important;
   color: #666666 !important;
@@ -53,9 +47,7 @@ input.dqm-drupal-module-page-highlight.button.loading,
 input.dqm-drupal-module-run-quality-check.button:focus,
 .dqm-drupal-module-run-quality-check.button:focus,
 input.dqm-drupal-module-run-quality-check-secondary.button:focus,
-.dqm-drupal-module-run-quality-check-secondary.button:focus,
-input.dqm-drupal-module-page-highlight.button:focus,
-.dqm-drupal-module-page-highlight.button:focus {
+.dqm-drupal-module-run-quality-check-secondary.button:focus {
   outline: 3px solid #005fcc !important;
   outline-offset: 2px !important;
   box-shadow: 0 0 0 2px #fff, 0 0 0 4px #005fcc !important;
@@ -70,12 +62,6 @@ input.dqm-drupal-module-page-highlight.button:focus,
   flex-direction: column;
 }
 
-input.dqm-drupal-module-page-highlight.button.active,
-.dqm-drupal-module-page-highlight.button.active {
-  background: #7a028d !important;
-  border-color: #7a028d !important;
-}
-
 .dqm-card {
   background: white;
   border-radius: 8px;
@@ -83,6 +69,18 @@ input.dqm-drupal-module-page-highlight.button.active,
   margin: 15px;
   border: 1px solid #e0e0e0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dqm-checkpoint-item {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.dqm-checkpoint-item:hover {
+  background: #f3e6fa;
+}
+.dqm-checkpoint-item.active,
+.dqm-checkpoint-item:active {
+  background: #e2c6f7;
 }
 
 .dqm-card h3 {

@@ -38,10 +38,11 @@ dqm_drupal_module.results:
     _permission: 'administer dqm drupal module'
   methods: [GET]
 
-dqm_drupal_module.highlight:
-  path: '/dqm-drupal-module/highlight/{assetId}'
+dqm_drupal_module.error_highlight:
+  path: '/dqm-drupal-module/error-highlight/{assetId}/{errorId}'
   defaults:
-    _controller: '\Drupal\dqm_drupal_module\Controller\ScanController::getPageHighlight'
+    _controller: '\Drupal\dqm_drupal_module\Controller\ScanController::getErrorHighlight'
   requirements:
     _permission: 'administer dqm drupal module'
   methods: [GET]
+

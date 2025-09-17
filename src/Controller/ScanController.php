@@ -17,6 +17,27 @@ class ScanController extends ControllerBase {
     $this->scanService = $scanService;
   }
 
+  /**
+   * AJAX endpoint to fetch error highlight HTML for a specific error.
+   */
+  public function getErrorHighlight($assetId, $errorId) {
+    $logger = \Drupal::logger('dqm_drupal_module');
+    $config = \Drupal::config('dqm_drupal_module.settings');
+    $api_key = $config->get('api_key');
+    try {
+      $result = $this->scanService->getErrorHighlight($api_key, $assetId, $errorId, $logger);
+      if ($result && isset($result['success']) && $result['success']) {
+        return new JsonResponse(['success' => true, 'html' => $result['html']]);
+      } else {
+        $msg = isset($result['message']) ? $result['message'] : 'Unknown error';
+        return new JsonResponse(['success' => false, 'message' => $msg]);
+      }
+    } catch (\Exception $e) {
+      $logger->error('Exception in getErrorHighlight: @msg', ['@msg' => $e->getMessage()]);
+      return new JsonResponse(['success' => false, 'message' => $e->getMessage()]);
+    }
+  }
+
   public static function create($container) {
     return new static(
       $container->get('dqm_drupal_module.scan_service')
@@ -25,17 +46,30 @@ class ScanController extends ControllerBase {
 
   public function scan(Request $request) {
     $logger = \Drupal::logger('dqm_drupal_module');
-    $config = \Drupal::config('dqm_drupal_module.settings');
-    $api_key = $config->get('api_key');
-    $website_id = $config->get('website_id');
-    $content = $request->request->get('content');
-    $asset_id = $request->request->get('assetId');
-    if (empty($content)) {
-      $logger->error('No content provided for scan.');
-      throw new HttpException(400, 'No content provided.');
+    try {
+      $config = \Drupal::config('dqm_drupal_module.settings');
+      $api_key = $config->get('api_key');
+      $website_id = $config->get('website_id');
+      $content = $request->request->get('content');
+      $asset_id = $request->request->get('assetId');
+      if (empty($content)) {
+        $logger->error('No content provided for scan.');
+        return new JsonResponse(['success' => false, 'message' => 'No content provided.'], 400);
+      }
+      if (empty($api_key) || empty($website_id)) {
+        $logger->error('Missing API key or website ID in config.');
+        return new JsonResponse(['success' => false, 'message' => 'Missing API key or website ID in config.'], 500);
+      }
+      $result = $this->scanService->scanContent($api_key, $website_id, $content, $logger, $asset_id);
+      return new JsonResponse($result);
+    } catch (\Exception $e) {
+      $logger->error('Exception in scan(): @msg', ['@msg' => $e->getMessage()]);
+      return new JsonResponse([
+        'success' => false,
+        'message' => 'Server error: ' . $e->getMessage(),
+        'trace' => method_exists($e, 'getTraceAsString') ? $e->getTraceAsString() : null
+      ], 500);
     }
-    $result = $this->scanService->scanContent($api_key, $website_id, $content, $logger, $asset_id);
-    return new JsonResponse($result);
   }
 
   public function getResults($assetId) {
@@ -46,41 +80,6 @@ class ScanController extends ControllerBase {
     return new JsonResponse($result);
   }
 
-  public function pageHighlight(Request $request) {
-    $logger = \Drupal::logger('dqm_drupal_module');
-    $config = \Drupal::config('dqm_drupal_module.settings');
-    $api_key = $config->get('api_key');
-    $asset_id = $request->request->get('assetId');
-    
-    if (empty($asset_id)) {
-      $logger->error('No asset ID provided for page highlight.');
-      throw new HttpException(400, 'No asset ID provided.');
-    }
-    
-    $result = $this->scanService->getPageHighlight($api_key, $asset_id, $logger);
-    return new JsonResponse($result);
-  }
-  
-  public function getPageHighlight($assetId) {
-    $logger = \Drupal::logger('dqm_drupal_module');
-    $config = \Drupal::config('dqm_drupal_module.settings');
-    $api_key = $config->get('api_key');
-    
-    if (empty($assetId)) {
-      $logger->error('No asset ID provided for page highlight.');
-      throw new HttpException(400, 'No asset ID provided.');
-    }
-    
-    $result = $this->scanService->getPageHighlight($api_key, $assetId, $logger);
-    
-    if (isset($result['success']) && $result['success'] && isset($result['html'])) {
-      $response = new Response($result['html']);
-      $response->headers->set('Content-Type', 'text/html');
-      return $response;
-    }
-    
-    return new JsonResponse($result);
-  }
 
   public function scanFromUrl(Request $request) {
     $logger = \Drupal::logger('dqm_drupal_module');
