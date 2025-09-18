@@ -181,12 +181,40 @@
       method: 'GET',
       dataType: 'json',
       success: function (response) {
-        resetButtonState(buttonElement);
         if (response && response.success && response.data && response.data.html) {
+          resetButtonState(buttonElement);
           resultsContainer.innerHTML = response.data.html;
         } else if (response.success && response.data) {
-          displayQualityResults(response.data, resultsContainer);
+          $.ajax({
+            url: Drupal.url('dqm-drupal-module/asset-status/' + assetId),
+            method: 'GET',
+            dataType: 'json',
+            success: function(statusData) {
+              if (statusData && Array.isArray(statusData.checkpoints)) {
+                var canHighlightMap = {};
+                statusData.checkpoints.forEach(function(cp) {
+                  if (cp && cp.id) {
+                    canHighlightMap[cp.id] = cp.canHighlight && typeof cp.canHighlight.page !== 'undefined' ? cp.canHighlight.page : undefined;
+                  }
+                });
+                if (response.data && Array.isArray(response.data.checkpoints)) {
+                  response.data.checkpoints.forEach(function(cp) {
+                    if (cp && cp.id && typeof canHighlightMap[cp.id] !== 'undefined') {
+                      cp._canHighlightPage = canHighlightMap[cp.id];
+                    }
+                  });
+                }
+              }
+              resetButtonState(buttonElement);
+              displayQualityResults(response.data, resultsContainer);
+            },
+            error: function() {
+              resetButtonState(buttonElement);
+              displayQualityResults(response.data, resultsContainer);
+            }
+          });
         } else {
+          resetButtonState(buttonElement);
           console.warn('[DQM] Failed to load quality results:', response.message || 'Unknown error');
           resultsContainer.innerHTML = '<div class="dqm-card"><p>Failed to load quality results: ' + (response.message || 'Unknown error') + '</p></div>';
         }
@@ -335,12 +363,19 @@
           checkpointBadgesHtml = `<div class="checkpoint-badges" style="display:flex;margin-top:4px;">${badgesHtml}</div>`;
         }
         const topicClasses = checkpoint.topics.map((topic) => 'topic-' + topicCounts[topic].className).join(' ');
-        failedCheckpointsHtml += `<div class="dqm-checkpoint-item ${topicClasses}" data-topics="${checkpoint.topics.join(',')}" data-error-id="${checkpoint.id}">
+        let cannotHighlightHtml = '';
+        let notHighlightable = checkpoint.hasOwnProperty('_canHighlightPage') && checkpoint._canHighlightPage === false;
+        if (notHighlightable) {
+          cannotHighlightHtml = '<span class="dqm-cannot-highlight">Cannot highlight</span>';
+        }
+        let notClickableClass = notHighlightable ? ' not-highlightable' : '';
+        failedCheckpointsHtml += `<div class="dqm-checkpoint-item${notClickableClass} ${topicClasses}" data-topics="${checkpoint.topics.join(',')}" data-error-id="${checkpoint.id}">
           <div class="checkpoint-icon-title-row">
-            <div class="checkpoint-icon failed dqm-info-icon" data-id="${checkpoint.id}" style="cursor:pointer;">!</div>
+            <div class="checkpoint-icon failed dqm-info-icon" data-id="${checkpoint.id}">!</div>
             <div>
               <span class="checkpoint-title">${checkpoint.name || 'Unknown Checkpoint'}</span>
               ${checkpointBadgesHtml}
+              ${cannotHighlightHtml}
             </div>
           </div>
         </div>`;
@@ -359,6 +394,9 @@
     setTimeout(function() {
       const checkpointItems = container.querySelectorAll('.dqm-checkpoint-item[data-error-id]');
       checkpointItems.forEach(function(item) {
+        if (item.classList.contains('not-highlightable')) {
+          return;
+        }
         item.addEventListener('click', function(e) {
           e.stopPropagation();
           const isActive = this.classList.contains('active');
@@ -453,7 +491,7 @@
                   if (errObj && errObj.message) {
                     var lowerMsg = errObj.message.toLowerCase().trim();
                     if (lowerMsg.includes('unsupported for checkpoint')) {
-                      msg = 'Highlighting is unsupported for this specific checkpoint.';
+                      return;
                     } else if (lowerMsg.includes('unsupported')) {
                       msg = errObj.message;
                     }

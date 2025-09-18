@@ -1,3 +1,11 @@
+dqm_drupal_module.asset_status:
+  path: '/dqm-drupal-module/asset-status/{assetId}'
+  defaults:
+    _controller: '\Drupal\dqm_drupal_module\Controller\ScanController::getAssetStatus'
+    _title: 'Asset Status'
+  requirements:
+    _permission: 'access content'
+    assetId: '.+'
 dqm_drupal_module.settings:  
   path: '/admin/config/content/dqm-drupal-module'  
   defaults:  

@@ -83,6 +83,14 @@ input.dqm-drupal-module-run-quality-check-secondary.button:focus,
   background: #e2c6f7;
 }
 
+.dqm-checkpoint-item.not-highlightable {
+  pointer-events: none;
+  opacity: 0.7;
+}
+.dqm-checkpoint-item.not-highlightable .checkpoint-icon {
+  cursor: default;
+}
+
 .dqm-card h3 {
   margin: 0;
   color: #333;
@@ -95,6 +103,11 @@ input.dqm-drupal-module-run-quality-check-secondary.button:focus,
   display: flex;
   align-items: center;
   gap: 20px;
+}
+
+span.dqm-cannot-highlight {
+    font-size: x-small;
+    padding: 2px;
 }
 
 .dqm-pie-chart {

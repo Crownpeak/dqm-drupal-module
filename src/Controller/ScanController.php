@@ -1,14 +1,12 @@
 <?php
 namespace Drupal\dqm_drupal_module\Controller;
 
-
 use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Drupal\dqm_drupal_module\Service\ScanService;
-
 
 class ScanController extends ControllerBase {
   protected $scanService;
@@ -80,6 +78,29 @@ class ScanController extends ControllerBase {
     return new JsonResponse($result);
   }
 
+  /**
+   * AJAX endpoint to fetch asset status (including canHighlight info) for a given assetId.
+   */
+  public function getAssetStatus($assetId) {
+    $logger = \Drupal::logger('dqm_drupal_module');
+    $config = \Drupal::config('dqm_drupal_module.settings');
+    $api_key = $config->get('api_key');
+    if (empty($assetId) || empty($api_key)) {
+      return new JsonResponse(['success' => false, 'message' => 'Missing assetId or API key.'], 400);
+    }
+    $result = $this->scanService->getResults($api_key, $assetId, $logger);
+    if (isset($result['success']) && $result['success'] && isset($result['data'])) {
+      $data = $result['data'];
+      $response = [
+        'success' => true,
+        'checkpoints' => isset($data['checkpoints']) ? $data['checkpoints'] : [],
+      ];
+      return new JsonResponse($response);
+    } else {
+      $msg = isset($result['message']) ? $result['message'] : 'Unknown error';
+      return new JsonResponse(['success' => false, 'message' => $msg], 500);
+    }
+  }
 
   public function scanFromUrl(Request $request) {
     $logger = \Drupal::logger('dqm_drupal_module');
