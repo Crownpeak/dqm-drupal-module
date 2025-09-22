@@ -54,3 +54,11 @@ dqm_drupal_module.error_highlight:
     _permission: 'administer dqm drupal module'
   methods: [GET]
 
+dqm_drupal_module.source:
+  path: '/dqm-drupal-module/source/{assetId}'
+  defaults:
+    _controller: '\Drupal\dqm_drupal_module\Controller\ScanController::getSource'
+  requirements:
+    _permission: 'administer dqm drupal module'
+  methods: [GET]
+

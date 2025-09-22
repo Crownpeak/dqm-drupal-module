@@ -28,6 +28,24 @@ input.dqm-drupal-module-run-quality-check-secondary.button,
   text-align: center !important;
 }
 
+input.dqm-drupal-module-source-button.button,
+.dqm-drupal-module-source-button.button {
+  background: #b604d4 !important;
+  border-color: #b604d4 !important;
+  color: white !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+
+.dqm-drupal-module-source-button.button[style*="display: block"],
+.dqm-drupal-module-source-button.button[style*="display:block"] {
+  position: fixed !important;
+  top: var(--drupal-displace-offset-top);
+  right: 0;
+}
+
+
+
 input.dqm-drupal-module-run-quality-check.button:disabled,
 .dqm-drupal-module-run-quality-check.button:disabled,
 input.dqm-drupal-module-run-quality-check-secondary.button:disabled,
@@ -35,7 +53,19 @@ input.dqm-drupal-module-run-quality-check-secondary.button:disabled,
 input.dqm-drupal-module-run-quality-check.button.loading,
 .dqm-drupal-module-run-quality-check.button.loading,
 input.dqm-drupal-module-run-quality-check-secondary.button.loading,
-.dqm-drupal-module-run-quality-check-secondary.button.loading{
+.dqm-drupal-module-run-quality-check-secondary.button.loading {
+  background: #cccccc !important;
+  border-color: #cccccc !important;
+  color: #666666 !important;
+  cursor: not-allowed !important;
+  opacity: 0.6 !important;
+  pointer-events: none !important;
+}
+
+input.dqm-drupal-module-source-button.button:disabled,
+.dqm-drupal-module-source-button.button:disabled,
+input.dqm-drupal-module-source-button.button.loading,
+.dqm-drupal-module-source-button.button.loading {
   background: #cccccc !important;
   border-color: #cccccc !important;
   color: #666666 !important;
@@ -48,6 +78,13 @@ input.dqm-drupal-module-run-quality-check.button:focus,
 .dqm-drupal-module-run-quality-check.button:focus,
 input.dqm-drupal-module-run-quality-check-secondary.button:focus,
 .dqm-drupal-module-run-quality-check-secondary.button:focus {
+  outline: 3px solid #005fcc !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #005fcc !important;
+}
+
+input.dqm-drupal-module-source-button.button:focus,
+.dqm-drupal-module-source-button.button:focus {
   outline: 3px solid #005fcc !important;
   outline-offset: 2px !important;
   box-shadow: 0 0 0 2px #fff, 0 0 0 4px #005fcc !important;
@@ -75,9 +112,11 @@ input.dqm-drupal-module-run-quality-check-secondary.button:focus,
   cursor: pointer;
   transition: background 0.15s;
 }
+
 .dqm-checkpoint-item:hover {
   background: #f3e6fa;
 }
+
 .dqm-checkpoint-item.active,
 .dqm-checkpoint-item:active {
   background: #e2c6f7;
@@ -102,8 +141,8 @@ input.dqm-drupal-module-run-quality-check-secondary.button:focus,
 }
 
 span.dqm-cannot-highlight {
-    font-size: x-small;
-    padding: 2px;
+  font-size: x-small;
+  padding: 2px;
 }
 
 .dqm-pie-chart {
@@ -245,11 +284,10 @@ span.dqm-cannot-highlight {
   background: #ff5630 !important;
 }
 
-.toolbar-tab
-  #toolbar-item-dqm-drupal-module-tray
-  .toolbar-tray.toolbar-tray-vertical.is-active {
+.toolbar-tab #toolbar-item-dqm-drupal-module-tray .toolbar-tray.toolbar-tray-vertical.is-active {
   width: 18rem !important;
 }
+
 .toolbar-tab #toolbar-item-dqm-drupal-module-tray .toolbar-tray.toolbar-tray-horizontal.is-active {
   width: 18rem;
   max-height: 100vh;
@@ -363,6 +401,7 @@ span.dqm-cannot-highlight {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -378,24 +417,31 @@ span.dqm-cannot-highlight {
   margin-right: 6px;
   vertical-align: middle;
 }
+
 .badge.accessibility {
   background: #006675;
 }
+
 .badge.seo {
   background: #2fe8b6;
 }
+
 .badge.brand {
   background: #3636c5;
 }
+
 .badge.regulatory {
   background: #008060;
 }
+
 .badge.legal {
   background: #001746;
 }
+
 .badge.usability {
   background: #cdd1d0;
 }
+
 .checkpoint-badges {
   display: flex;
   gap: 6px;
@@ -404,4 +450,63 @@ span.dqm-cannot-highlight {
 
 .dqm-results-container {
   padding-bottom: 30px !important;
+}
+
+.dqm-source-container {
+  padding: 20px;
+  background: #fff;
+  min-height: 100vh;
+}
+
+
+
+.dqm-source-loading {
+  padding: 40px;
+  text-align: center;
+  color: #666;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.dqm-source-code {
+  margin: 0;
+  padding: 20px;
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #333;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-x: auto;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

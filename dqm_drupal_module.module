@@ -28,6 +28,14 @@ function dqm_drupal_module_toolbar() {
           'content' => [
             '#type' => 'container',
             '#attributes' => ['class' => ['dqm-drupal-module-toolbar-tray']],
+            'source_button' => [
+              '#type' => 'button',
+              '#value' => t('Source'),
+              '#attributes' => [
+                'class' => ['dqm-drupal-module-source-button'],
+                'style' => 'display: none;',
+              ],
+            ],
             'run_quality_check' => [
               '#type' => 'button',
               '#value' => t('Run Quality Check'),

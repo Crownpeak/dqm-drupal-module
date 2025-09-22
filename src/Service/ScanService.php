@@ -191,4 +191,60 @@ class ScanService {
       return ['success' => false, 'message' => $e->getMessage()];
     }
   }
+
+  /**
+   * Fetch HTML source from Crownpeak DQM API.
+   */
+  public function getSource($api_key, $assetId, $logger) {
+    if (empty($assetId)) {
+      return ['success' => false, 'message' => 'Missing assetId.'];
+    }
+    $endpoint = 'https://api.crownpeak.net/dqm-cms/v1/assets/'
+      . rawurlencode($assetId)
+      . '/pagehighlight/all?apiKey=' . rawurlencode($api_key)
+      . '&visibility=public';
+    
+    $logger->info('=== SOURCE API REQUEST ===');
+    $logger->info('Endpoint: @endpoint', ['@endpoint' => $endpoint]);
+    
+    try {
+      $curl = curl_init();
+      curl_setopt_array($curl, [
+        CURLOPT_URL => $endpoint,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'GET',
+        CURLOPT_HTTPHEADER => [
+          'x-api-key: ' . $api_key,
+        ],
+      ]);
+      $response = curl_exec($curl);
+      $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+      $error = curl_error($curl);
+      curl_close($curl);
+      
+      $logger->info('=== SOURCE API RESPONSE ===');
+      $logger->info('HTTP Status Code: @http_code', ['@http_code' => $httpCode]);
+      $logger->info('Response length: @response_length bytes', ['@response_length' => strlen($response)]);
+      $logger->info('cURL error: @curl_error', ['@curl_error' => $error ?: 'None']);
+      
+      if ($error) {
+        $logger->error('cURL error in getSource: @error', ['@error' => $error]);
+        return ['success' => false, 'message' => 'cURL error: ' . $error];
+      }
+      if ($httpCode >= 200 && $httpCode < 300) {
+        return ['success' => true, 'html' => $response];
+      } else {
+        $logger->error('HTTP error in getSource: @code - @response', ['@code' => $httpCode, '@response' => $response]);
+        return ['success' => false, 'message' => 'HTTP ' . $httpCode . ': ' . $response];
+      }
+    } catch (\Exception $e) {
+      $logger->error('Exception in getSource: @msg', ['@msg' => $e->getMessage()]);
+      return ['success' => false, 'message' => $e->getMessage()];
+    }
+  }
 }
