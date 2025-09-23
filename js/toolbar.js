@@ -256,8 +256,8 @@
 
     const sourceButton = document.querySelector('.dqm-drupal-module-source-button');
     if (sourceButton) {
-      sourceButton.classList.add('dqm-source-visible');
-      sourceButton.style.display = 'block';
+      sourceButton.classList.remove('dqm-source-visible');
+      sourceButton.style.display = 'none';
     }
 
     const topicColors = {
@@ -301,7 +301,6 @@
         }
       }
     }
-
 
     for (const [key, value] of Object.entries(topicCounts)) {
       topicCounts[key].percent = value.total > 0 ? Math.round((value.passed / value.total) * 100) : 0;
@@ -384,9 +383,18 @@
         }
         const topicClasses = checkpoint.topics.map((topic) => 'topic-' + topicCounts[topic].className).join(' ');
         let cannotHighlightHtml = '';
-        let notHighlightable = checkpoint.hasOwnProperty('_canHighlightPage') && checkpoint._canHighlightPage === false;
-        if (notHighlightable) {
+        let notHighlightable = false;
+
+        if (checkpoint.hasOwnProperty('_canHighlightPage') && checkpoint._canHighlightPage === false &&
+            checkpoint.canHighlight && checkpoint.canHighlight.source === false) {
           cannotHighlightHtml = '<span class="dqm-cannot-highlight">Cannot highlight</span>';
+          notHighlightable = true;
+        }
+        else if (checkpoint.canHighlight && 
+                checkpoint.canHighlight.page === false && 
+                checkpoint.canHighlight.source === false) {
+          cannotHighlightHtml = '<span class="dqm-cannot-highlight">Cannot highlight</span>';
+          notHighlightable = true;
         }
         let notClickableClass = notHighlightable ? ' not-highlightable' : '';
         failedCheckpointsHtml += `<div class="dqm-checkpoint-item${notClickableClass} ${topicClasses}" data-topics="${checkpoint.topics.join(',')}" data-error-id="${checkpoint.id}">
@@ -422,6 +430,7 @@
           const isActive = this.classList.contains('active');
           if (isActive) {
             this.classList.remove('active');
+            hideSourceButton();
             document.querySelectorAll('.dqm-element-highlight').forEach(function (el) {
               el.classList.remove('dqm-element-highlight');
               if (el.hasAttribute('data-dqm-original-style')) {
@@ -433,8 +442,25 @@
             });
             return;
           }
+          
           checkpointItems.forEach(function (i) { i.classList.remove('active'); });
           this.classList.add('active');
+          
+          const errorId = this.getAttribute('data-error-id');
+          const checkpoint = failedCheckpoints.find(cp => cp.id === errorId);
+          
+          if (checkpoint && checkpoint.canHighlight) {
+            if (checkpoint.canHighlight.source === true && checkpoint.canHighlight.page === false) {
+              showSourceButton();
+              showSourceModalWithHighlight(document.querySelector('.dqm-drupal-module-source-button'), errorId);
+              return;
+            } else if (checkpoint.canHighlight.source === true && checkpoint.canHighlight.page === true) {
+              showSourceButton();
+            } else {
+              hideSourceButton();
+            }
+          }
+          
           document.querySelectorAll('.dqm-element-highlight').forEach(function (el) {
             el.classList.remove('dqm-element-highlight');
             if (el.hasAttribute('data-dqm-original-style')) {
@@ -444,7 +470,7 @@
               el.removeAttribute('style');
             }
           });
-          const errorId = this.getAttribute('data-error-id');
+          
           if (!errorId) return;
           const assetKey = 'dqm_asset_id_' + btoa(window.location.href);
           const assetId = localStorage.getItem(assetKey);
@@ -452,6 +478,12 @@
             alert('No asset ID found for this page. Please run a quality check first.');
             return;
           }
+          if (checkpoint && checkpoint.canHighlight && 
+              checkpoint.canHighlight.source === true && 
+              checkpoint.canHighlight.page === false) {
+            return;
+          }
+          
           $.ajax({
             url: Drupal.url('dqm-drupal-module/error-highlight/' + assetId + '/' + errorId),
             method: 'GET',
@@ -460,8 +492,13 @@
               if (typeof response === 'object' && response !== null && response.message) {
                 var lowerMsg = response.message.toLowerCase().trim();
                 if (lowerMsg.includes('unsupported for checkpoint')) {
-                  alert('Highlighting is unsupported for this specific checkpoint.');
-                  return;
+                  const checkpoint = failedCheckpoints.find(cp => cp.id === errorId);
+                  if (checkpoint && checkpoint.canHighlight && checkpoint.canHighlight.source === true) {
+                    return;
+                  } else {
+                    alert('Highlighting is unsupported for this specific checkpoint.');
+                    return;
+                  }
                 } else if (lowerMsg.includes('unsupported')) {
                   alert(response.message);
                   return;
@@ -473,29 +510,93 @@
               }
               const tempDiv = document.createElement('div');
               tempDiv.innerHTML = response.html;
-              const highlightEl = tempDiv.querySelector('[style*="background:yellow"], [style*="background: yellow"]');
+              const highlightEl = tempDiv.querySelector('[style*="background:yellow"], [style*="background: yellow"], [style*="background-color:yellow"], [style*="background-color: yellow"]');
+              
               if (highlightEl) {
-                const tag = highlightEl.tagName;
-                const text = highlightEl.textContent.trim();
-                const style = highlightEl.getAttribute('style');
                 let found = false;
-                let candidates = [];
-                document.querySelectorAll(tag).forEach(function (el) {
-                  if (el.textContent.trim() === text) {
-                    candidates.push(el);
+                const highlightStyle = 'background: yellow !important; border: 2px solid red !important;';
+
+                let textToFind = highlightEl.textContent.trim();
+                const allElements = document.querySelectorAll('*');
+                for (const el of allElements) {
+                  if (['SCRIPT', 'STYLE', 'META', 'LINK', 'TITLE'].includes(el.tagName)) {
+                    continue;
                   }
-                });
-                if (candidates.length > 0) {
-                  let innermost = candidates.reduce(function (a, b) {
-                    return a.childElementCount > b.childElementCount ? b : a;
-                  });
-                  if (!innermost.hasAttribute('data-dqm-original-style')) {
-                    innermost.setAttribute('data-dqm-original-style', innermost.getAttribute('style') || '');
+                  
+                  if (el.textContent.trim() === textToFind) {
+                    if (!el.hasAttribute('data-dqm-original-style')) {
+                      el.setAttribute('data-dqm-original-style', el.getAttribute('style') || '');
+                    }
+                    el.setAttribute('style', (el.getAttribute('style') || '') + '; ' + highlightStyle);
+                    el.classList.add('dqm-element-highlight');
+                    found = true;
+                    break;
                   }
-                  innermost.setAttribute('style', style || '');
-                  innermost.classList.add('dqm-element-highlight');
-                  found = true;
                 }
+                if (!found) {
+                  
+                  const innerElements = highlightEl.querySelectorAll('*');
+                  for (const innerEl of innerElements) {
+                    const innerText = innerEl.textContent.trim();
+                    if (innerText.length > 10) {
+                      const tagName = innerEl.tagName;
+                      
+                      for (const pageEl of allElements) {
+                        if (pageEl.tagName === tagName && 
+                            pageEl.textContent.trim() === innerText &&
+                            !['SCRIPT', 'STYLE', 'META', 'LINK', 'TITLE'].includes(pageEl.tagName)) {
+                          if (!pageEl.hasAttribute('data-dqm-original-style')) {
+                            pageEl.setAttribute('data-dqm-original-style', pageEl.getAttribute('style') || '');
+                          }
+                          pageEl.setAttribute('style', (pageEl.getAttribute('style') || '') + '; ' + highlightStyle);
+                          pageEl.classList.add('dqm-element-highlight');
+                          found = true;
+                          break;
+                        }
+                      }
+                      if (found) break;
+                    }
+                  }
+                }
+                if (!found) {
+                  const words = textToFind.split(' ').filter(word => word.length > 3);
+                  if (words.length > 0) {
+                    let bestMatch = null;
+                    let bestScore = 0;
+                    
+                    for (const el of allElements) {   
+                     
+                      if (['SCRIPT', 'STYLE', 'META', 'LINK', 'TITLE'].includes(el.tagName)) {
+                        continue;
+                      }
+                      
+                      const elText = el.textContent.trim();
+                      if (elText.length > 10) {
+                        let score = 0;
+                        for (const word of words) {
+                          if (elText.toLowerCase().includes(word.toLowerCase())) {
+                            score++;
+                          }
+                        }
+                        const similarity = score / words.length;
+                        if (similarity > bestScore && similarity > 0.6) {
+                          bestScore = similarity;
+                          bestMatch = el;
+                        }
+                      }
+                    }
+                    
+                    if (bestMatch) {
+                      if (!bestMatch.hasAttribute('data-dqm-original-style')) {
+                        bestMatch.setAttribute('data-dqm-original-style', bestMatch.getAttribute('style') || '');
+                      }
+                      bestMatch.setAttribute('style', (bestMatch.getAttribute('style') || '') + '; ' + highlightStyle);
+                      bestMatch.classList.add('dqm-element-highlight');
+                      found = true;
+                    }
+                  }
+                }
+                
                 if (!found) {
                   alert('Could not find the matching content to highlight on this page.');
                 }
@@ -655,6 +756,24 @@
           alert('Error toggling page highlight: ' + e.message);
         }
       });
+    }
+
+    window.dqmFailedCheckpoints = failedCheckpoints
+  }
+
+  function showSourceButton() {
+    const sourceButton = document.querySelector('.dqm-drupal-module-source-button');
+    if (sourceButton) {
+      sourceButton.classList.add('dqm-source-visible');
+      sourceButton.style.display = 'block';
+    }
+  }
+
+  function hideSourceButton() {
+    const sourceButton = document.querySelector('.dqm-drupal-module-source-button');
+    if (sourceButton) {
+      sourceButton.classList.remove('dqm-source-visible');
+      sourceButton.style.display = 'none';
     }
   }
 
@@ -935,101 +1054,145 @@
   }
 
   function showSourceModal(buttonElement) {
-    try {
-      const $button = $(buttonElement);
-      if ($button.data('loading')) {
-        return;
-      }
+  try {
+    const $button = $(buttonElement);
+    if ($button.data('loading')) {
+      return;
+    }
 
-      const mainCanvas = document.querySelector('.dialog-off-canvas-main-canvas');
-      if (!mainCanvas) {
-        alert('Main canvas area not found');
-        return;
-      }
+    const mainCanvas = document.querySelector('.dialog-off-canvas-main-canvas');
+    if (!mainCanvas) {
+      alert('Main canvas area not found');
+      return;
+    }
 
-      const isShowingSource = mainCanvas.hasAttribute('data-original-content');
+    const isShowingSource = mainCanvas.hasAttribute('data-original-content');
 
-      if (isShowingSource) {
-        const originalContent = mainCanvas.getAttribute('data-original-content');
-        if (originalContent) {
-          mainCanvas.innerHTML = originalContent;
-          mainCanvas.removeAttribute('data-original-content');
-          setButtonText($button, 'Source');
+    const activeCheckpoint = document.querySelector('.dqm-checkpoint-item.active');
+    let isSourceOnly = false;
+    let shouldHighlightError = false;
+    let activeErrorId = null;
+    
+    if (activeCheckpoint) {
+      const errorId = activeCheckpoint.getAttribute('data-error-id');
+      const checkpoint = window.dqmFailedCheckpoints?.find(cp => cp.id === errorId);
+      if (checkpoint && checkpoint.canHighlight) {
+        if (checkpoint.canHighlight.source === true && checkpoint.canHighlight.page === false) {
+          isSourceOnly = true;
+        } else if (checkpoint.canHighlight.source === true && checkpoint.canHighlight.page === true) {
+          shouldHighlightError = true;
+          activeErrorId = errorId;
         }
-        return;
       }
+    }
 
-      const currentUrl = window.location.href;
-      const assetKey = 'dqm_asset_id_' + btoa(currentUrl);
-      const existingAssetId = localStorage.getItem(assetKey);
-
-      if (!existingAssetId) {
-        alert('No asset ID found for this page. Please run a quality check first.');
-        return;
+    if (isShowingSource && !isSourceOnly) {
+      const originalContent = mainCanvas.getAttribute('data-original-content');
+      if (originalContent) {
+        mainCanvas.innerHTML = originalContent;
+        mainCanvas.removeAttribute('data-original-content');
+        setButtonText($button, 'Source');
       }
+      return;
+    }
 
-      $button.data('loading', true);
-      $button.prop('disabled', true);
-      setButtonText($button, 'Loading...');
+    const currentUrl = window.location.href;
+    const assetKey = 'dqm_asset_id_' + btoa(currentUrl);
+    const existingAssetId = localStorage.getItem(assetKey);
 
+    if (!existingAssetId) {
+      alert('No asset ID found for this page. Please run a quality check first.');
+      return;
+    }
+
+    $button.data('loading', true);
+    $button.prop('disabled', true);
+    setButtonText($button, 'Loading...');
+
+    if (!isSourceOnly) {
       mainCanvas.setAttribute('data-original-content', mainCanvas.innerHTML);
+    }
 
-      mainCanvas.innerHTML = `
-        <div class="dqm-source-container">
-          <div class="dqm-source-loading">
-            <span class="dqm-spinner"></span>
-            Loading source code...
-          </div>
-          <pre class="dqm-source-code" style="display: none;"></pre>
+    mainCanvas.innerHTML = `
+      <div class="dqm-source-container">
+        <div class="dqm-source-loading">
+          <span class="dqm-spinner"></span>
+          Loading source code...
         </div>
-      `;
+        <pre class="dqm-source-code" style="display: none;"></pre>
+      </div>
+    `;
 
-      $.ajax({
-        url: Drupal.url('dqm-drupal-module/source/' + existingAssetId),
-        method: 'GET',
-        dataType: 'json',
-        success: function (response) {
-          try {
-            if (response && response.success && response.html) {
-              const codeElement = mainCanvas.querySelector('.dqm-source-code');
-              const loadingElement = mainCanvas.querySelector('.dqm-source-loading');
+    let endpoint, loadingText;
+    if (shouldHighlightError && activeErrorId) {
+      endpoint = Drupal.url('dqm-drupal-module/error-highlight-source/' + existingAssetId + '/' + activeErrorId);
+      loadingText = 'Loading highlighted source code...';
+    } else {
+      endpoint = Drupal.url('dqm-drupal-module/source/' + existingAssetId);
+      loadingText = 'Loading source code...';
+    }
+    const loadingElement = mainCanvas.querySelector('.dqm-source-loading');
+    if (loadingElement) {
+      loadingElement.innerHTML = `<span class="dqm-spinner"></span>${loadingText}`;
+    }
 
-              if (codeElement && loadingElement) {
+    $.ajax({
+      url: endpoint,
+      method: 'GET',
+      dataType: 'json',
+      success: function (response) {
+        try {
+          if (response && response.success && response.html) {
+            const codeElement = mainCanvas.querySelector('.dqm-source-code');
+            const loadingElement = mainCanvas.querySelector('.dqm-source-loading');
+
+            if (codeElement && loadingElement) {
+              if (shouldHighlightError && activeErrorId) {
+                codeElement.innerHTML = response.html;
+              } else {
                 codeElement.textContent = response.html;
-                loadingElement.style.display = 'none';
-                codeElement.style.display = 'block';
-                setButtonText($button, 'Content');
               }
-            } else {
-              const loadingElement = mainCanvas.querySelector('.dqm-source-loading');
-              if (loadingElement) {
-                loadingElement.innerHTML = 'Error: ' + (response.message || 'Failed to load source');
+              
+              loadingElement.style.display = 'none';
+              codeElement.style.display = 'block';
+              
+              if (isSourceOnly) {
+                setButtonText($button, 'Source');
+              } else {
+                setButtonText($button, 'Browser');
               }
             }
-          } catch (e) {
+          } else {
             const loadingElement = mainCanvas.querySelector('.dqm-source-loading');
             if (loadingElement) {
-              loadingElement.innerHTML = 'Error processing response: ' + e.message;
+              loadingElement.innerHTML = 'Error: ' + (response.message || 'Failed to load source');
             }
           }
-        },
-        error: function (xhr, status, error) {
+        } catch (e) {
           const loadingElement = mainCanvas.querySelector('.dqm-source-loading');
           if (loadingElement) {
-            loadingElement.innerHTML = 'Error loading source: ' + error;
+            loadingElement.innerHTML = 'Error processing response: ' + e.message;
           }
-        },
-        complete: function () {
-          $button.data('loading', false);
-          $button.prop('disabled', false);
         }
-      });
+      },
+      error: function (xhr, status, error) {
+        const loadingElement = mainCanvas.querySelector('.dqm-source-loading');
+        if (loadingElement) {
+          loadingElement.innerHTML = 'Error loading source: ' + error;
+        }
+      },
+      complete: function () {
+        $button.data('loading', false);
+        $button.prop('disabled', false);
+      }
+    });
 
-    } catch (e) {
-      alert('Error showing source: ' + e.message);
-      const $button = $(buttonElement);
-      $button.data('loading', false);
-      $button.prop('disabled', false);
+  } catch (e) {
+    alert('Error showing source: ' + e.message);
+    const $button = $(buttonElement);
+    $button.data('loading', false);
+    $button.prop('disabled', false);
+    if (!isSourceOnly) {
       const originalContent = mainCanvas.getAttribute('data-original-content');
       if (originalContent) {
         mainCanvas.innerHTML = originalContent;
@@ -1038,4 +1201,118 @@
       }
     }
   }
+}
+
+  function showSourceModalWithHighlight(buttonElement, errorId) {
+    try {
+      const $button = $(buttonElement);
+      if ($button.data("loading")) {
+        return;
+      }
+
+      const mainCanvas = document.querySelector(
+        ".dialog-off-canvas-main-canvas"
+      );
+      if (!mainCanvas) {
+        alert("Main canvas area not found");
+        return;
+      }
+
+      const currentUrl = window.location.href;
+      const assetKey = "dqm_asset_id_" + btoa(currentUrl);
+      const existingAssetId = localStorage.getItem(assetKey);
+
+      if (!existingAssetId) {
+        alert(
+          "No asset ID found for this page. Please run a quality check first."
+        );
+        return;
+      }
+
+      $button.data("loading", true);
+      $button.prop("disabled", true);
+      setButtonText($button, "Loading...");
+      if (!mainCanvas.hasAttribute("data-original-content")) {
+        mainCanvas.setAttribute("data-original-content", mainCanvas.innerHTML);
+      }
+
+      mainCanvas.innerHTML = `
+      <div class="dqm-source-container">
+        <div class="dqm-source-loading">
+          <span class="dqm-spinner"></span>
+          Loading highlighted source code...
+        </div>
+        <pre class="dqm-source-code" style="display: none;"></pre>
+      </div>
+    `;
+
+      $.ajax({
+        url: Drupal.url(
+          "dqm-drupal-module/error-highlight-source/" +
+            existingAssetId +
+            "/" +
+            errorId
+        ),
+        method: "GET",
+        dataType: "json",
+        success: function (response) {
+          try {
+            if (response && response.success && response.html) {
+              const codeElement = mainCanvas.querySelector(".dqm-source-code");
+              const loadingElement = mainCanvas.querySelector(
+                ".dqm-source-loading"
+              );
+
+              if (codeElement && loadingElement) {
+                // The response.html should already contain the highlighted source code
+                codeElement.innerHTML = response.html; // Use innerHTML to preserve HTML highlighting
+                loadingElement.style.display = "none";
+                codeElement.style.display = "block";
+
+                setButtonText($button, "Browser");
+              }
+            } else {
+              const loadingElement = mainCanvas.querySelector(
+                ".dqm-source-loading"
+              );
+              if (loadingElement) {
+                loadingElement.innerHTML =
+                  "Error: " +
+                  (response.message || "Failed to load highlighted source");
+              }
+            }
+          } catch (e) {
+            const loadingElement = mainCanvas.querySelector(
+              ".dqm-source-loading"
+            );
+            if (loadingElement) {
+              loadingElement.innerHTML =
+                "Error processing response: " + e.message;
+            }
+          }
+        },
+        error: function (xhr, status, error) {
+          const loadingElement = mainCanvas.querySelector(
+            ".dqm-source-loading"
+          );
+          if (loadingElement) {
+            loadingElement.innerHTML =
+              "Error loading highlighted source: " + error;
+          }
+        },
+        complete: function () {
+          $button.data("loading", false);
+          $button.prop("disabled", false);
+        },
+      });
+    } catch (e) {
+      alert("Error showing highlighted source: " + e.message);
+      const $button = $(buttonElement);
+      $button.data("loading", false);
+      $button.prop("disabled", false);
+    }
+  }
+
+  window.dqmFailedCheckpoints = [];
+
 })(jQuery, Drupal, window.once);

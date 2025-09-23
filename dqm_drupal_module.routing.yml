@@ -54,11 +54,10 @@ dqm_drupal_module.error_highlight:
     _permission: 'administer dqm drupal module'
   methods: [GET]
 
-dqm_drupal_module.source:
-  path: '/dqm-drupal-module/source/{assetId}'
+dqm_drupal_module.error_highlight_source:
+  path: '/dqm-drupal-module/error-highlight-source/{assetId}/{errorId}'
   defaults:
-    _controller: '\Drupal\dqm_drupal_module\Controller\ScanController::getSource'
+    _controller: '\Drupal\dqm_drupal_module\Controller\ScanController::getErrorHighlightSource'
   requirements:
-    _permission: 'administer dqm drupal module'
+    _permission: 'access content'
   methods: [GET]
-

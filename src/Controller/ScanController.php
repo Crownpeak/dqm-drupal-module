@@ -36,32 +36,6 @@ class ScanController extends ControllerBase {
     }
   }
 
-  /**
-   * AJAX endpoint to fetch HTML source from CrownPeak API.
-   */
-  public function getSource($assetId) {
-    $logger = \Drupal::logger('dqm_drupal_module');
-    $config = \Drupal::config('dqm_drupal_module.settings');
-    $api_key = $config->get('api_key');
-    
-    if (empty($assetId) || empty($api_key)) {
-      return new JsonResponse(['success' => false, 'message' => 'Missing assetId or API key.'], 400);
-    }
-    
-    try {
-      $result = $this->scanService->getSource($api_key, $assetId, $logger);
-      if ($result && isset($result['success']) && $result['success']) {
-        return new JsonResponse(['success' => true, 'html' => $result['html']]);
-      } else {
-        $msg = isset($result['message']) ? $result['message'] : 'Unknown error';
-        return new JsonResponse(['success' => false, 'message' => $msg]);
-      }
-    } catch (\Exception $e) {
-      $logger->error('Exception in getSource: @msg', ['@msg' => $e->getMessage()]);
-      return new JsonResponse(['success' => false, 'message' => $e->getMessage()]);
-    }
-  }
-
   public static function create($container) {
     return new static(
       $container->get('dqm_drupal_module.scan_service')
@@ -270,5 +244,24 @@ class ScanController extends ControllerBase {
     }
     $logger->info('Cleaned HTML: removed @count admin elements', ['@count' => $removedCount]);
     return $dom->saveHTML();
+  }
+
+  public function getErrorHighlightSource($assetId, $errorId) {
+    $logger = \Drupal::logger('dqm_drupal_module');
+    $config = \Drupal::config('dqm_drupal_module.settings');
+    $api_key = $config->get('api_key');
+    
+    try {
+      $result = $this->scanService->getErrorHighlightSource($api_key, $assetId, $errorId, $logger);
+      if ($result && isset($result['success']) && $result['success']) {
+        return new JsonResponse(['success' => true, 'html' => $result['html']]);
+      } else {
+        $msg = isset($result['message']) ? $result['message'] : 'Unknown error';
+        return new JsonResponse(['success' => false, 'message' => $msg]);
+      }
+    } catch (\Exception $e) {
+      $logger->error('Exception in getErrorHighlightSource: @msg', ['@msg' => $e->getMessage()]);
+      return new JsonResponse(['success' => false, 'message' => $e->getMessage()]);
+    }
   }
 }
