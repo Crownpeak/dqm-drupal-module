@@ -440,6 +440,19 @@
                 el.removeAttribute('style');
               }
             });
+            
+            const mainCanvas = document.querySelector('.dialog-off-canvas-main-canvas');
+            if (mainCanvas && mainCanvas.hasAttribute('data-original-content')) {
+              const originalContent = mainCanvas.getAttribute('data-original-content');
+              mainCanvas.innerHTML = originalContent;
+              mainCanvas.removeAttribute('data-original-content');
+              
+              const sourceButton = document.querySelector('.dqm-drupal-module-source-button');
+              if (sourceButton) {
+                setButtonText($(sourceButton), 'Source');
+              }
+            }
+            
             return;
           }
           
@@ -448,18 +461,6 @@
           
           const errorId = this.getAttribute('data-error-id');
           const checkpoint = failedCheckpoints.find(cp => cp.id === errorId);
-          
-          if (checkpoint && checkpoint.canHighlight) {
-            if (checkpoint.canHighlight.source === true && checkpoint.canHighlight.page === false) {
-              showSourceButton();
-              showSourceModalWithHighlight(document.querySelector('.dqm-drupal-module-source-button'), errorId);
-              return;
-            } else if (checkpoint.canHighlight.source === true && checkpoint.canHighlight.page === true) {
-              showSourceButton();
-            } else {
-              hideSourceButton();
-            }
-          }
           
           document.querySelectorAll('.dqm-element-highlight').forEach(function (el) {
             el.classList.remove('dqm-element-highlight');
@@ -470,6 +471,39 @@
               el.removeAttribute('style');
             }
           });
+          
+          if (checkpoint && checkpoint.canHighlight) {
+            if (checkpoint.canHighlight.source === true && checkpoint.canHighlight.page === false) {
+              showSourceButton();
+              const mainCanvas = document.querySelector('.dialog-off-canvas-main-canvas');
+              if (mainCanvas && !mainCanvas.hasAttribute('data-original-content')) {
+                mainCanvas.setAttribute('data-original-content', mainCanvas.innerHTML);
+              }
+              showSourceModalWithHighlight(document.querySelector('.dqm-drupal-module-source-button'), errorId);
+              return;
+            } else if (checkpoint.canHighlight.source === true && checkpoint.canHighlight.page === true) {
+              showSourceButton();
+              const mainCanvas = document.querySelector('.dialog-off-canvas-main-canvas');
+              if (mainCanvas && mainCanvas.hasAttribute('data-original-content')) {
+                const originalContent = mainCanvas.getAttribute('data-original-content');
+                mainCanvas.innerHTML = originalContent;
+                mainCanvas.removeAttribute('data-original-content');
+                
+                const sourceButton = document.querySelector('.dqm-drupal-module-source-button');
+                if (sourceButton) {
+                  setButtonText($(sourceButton), 'Source');
+                }
+              }
+            } else {
+              hideSourceButton();
+              const mainCanvas = document.querySelector('.dialog-off-canvas-main-canvas');
+              if (mainCanvas && mainCanvas.hasAttribute('data-original-content')) {
+                const originalContent = mainCanvas.getAttribute('data-original-content');
+                mainCanvas.innerHTML = originalContent;
+                mainCanvas.removeAttribute('data-original-content');
+              }
+            }
+          }
           
           if (!errorId) return;
           const assetKey = 'dqm_asset_id_' + btoa(window.location.href);
@@ -1038,7 +1072,6 @@
           },
           error: function (xhr, status, error) {
             console.error('API error:', xhr, status, error);
-            console.log('Falling back to local highlighting');
             addLocalHighlighting();
             $button.addClass('active');
             $button.val(Drupal.t('Page Highlighting'));
@@ -1161,6 +1194,11 @@
               } else {
                 setButtonText($button, 'Browser');
               }
+              if (shouldHighlightError && activeErrorId) {
+                setTimeout(function() {
+                  scrollToHighlightedCode(mainCanvas);
+                }, 200);
+              }
             }
           } else {
             const loadingElement = mainCanvas.querySelector('.dqm-source-loading');
@@ -1264,12 +1302,14 @@
               );
 
               if (codeElement && loadingElement) {
-                // The response.html should already contain the highlighted source code
-                codeElement.innerHTML = response.html; // Use innerHTML to preserve HTML highlighting
+                codeElement.innerHTML = response.html; 
                 loadingElement.style.display = "none";
                 codeElement.style.display = "block";
 
                 setButtonText($button, "Browser");
+                setTimeout(function() {
+                  scrollToHighlightedCode(mainCanvas);
+                }, 100);
               }
             } else {
               const loadingElement = mainCanvas.querySelector(
@@ -1312,6 +1352,106 @@
       $button.prop("disabled", false);
     }
   }
+
+  function scrollToHighlightedCode(container) {
+    try {
+      let highlightedElement = null;
+
+      highlightedElement = container.querySelector("tr.astError, td.astError");
+
+      if (!highlightedElement) {
+        const errorIconCells = container.querySelectorAll("td.errorIcon");
+        errorIconCells.forEach((cell) => {
+          if (cell.innerHTML !== "&nbsp;" && cell.innerHTML.trim() !== "") {
+            highlightedElement = cell.closest("tr");
+          }
+        });
+      }
+
+      if (!highlightedElement) {
+        highlightedElement = container.querySelector(
+          "td.content span.astError, td.content span.astHighlightFull"
+        );
+      }
+
+      if (!highlightedElement) {
+        highlightedElement = container.querySelector(
+          ".astError.astHighlightFull, .astError, .astHighlightFull"
+        );
+      }
+
+      if (!highlightedElement) {
+        highlightedElement = container.querySelector(
+          '[style*="background:yellow"], [style*="background-color:yellow"], [style*="background: yellow"]'
+        );
+      }
+
+      if (!highlightedElement) {
+        highlightedElement = container.querySelector(
+          'span[style*="background"], td[style*="background"]'
+        );
+      }
+
+      if (
+        highlightedElement &&
+        (highlightedElement.tagName === "SPAN" ||
+          highlightedElement.tagName === "TD")
+      ) {
+        const parentRow = highlightedElement.closest("tr");
+        if (parentRow) {
+          highlightedElement = parentRow;
+        }
+      }
+
+      if (highlightedElement) {
+        const sourceContainer =
+          container.querySelector(".dqm-source-code, pre, #sourceViewTable") ||
+          container;
+
+        const elementRect = highlightedElement.getBoundingClientRect();
+        const containerRect = sourceContainer.getBoundingClientRect();
+
+        let scrollTop;
+        if (sourceContainer.scrollTop !== undefined) {
+          scrollTop =
+            elementRect.top -
+            containerRect.top +
+            sourceContainer.scrollTop -
+            100;
+        } else {
+          scrollTop = highlightedElement.offsetTop - 100;
+        }
+
+        if (sourceContainer.scrollTo) {
+          sourceContainer.scrollTo({
+            top: Math.max(0, scrollTop),
+            behavior: "smooth",
+          });
+        } else if (sourceContainer.scrollTop !== undefined) {
+          sourceContainer.scrollTop = Math.max(0, scrollTop);
+        } else {
+          container.scrollTo({
+            top: Math.max(0, scrollTop),
+            behavior: "smooth",
+          });
+        }
+
+        highlightedElement.style.transition = "background-color 0.3s ease";
+        const originalBackground = highlightedElement.style.backgroundColor;
+        highlightedElement.style.backgroundColor = "rgba(182, 4, 212, 0.2)";
+
+        setTimeout(function () {
+          if (highlightedElement.style) {
+            highlightedElement.style.backgroundColor = originalBackground;
+            highlightedElement.style.transition = "";
+          }
+        }, 2000);
+      }
+    } catch (e) {
+      console.error("Error scrolling to highlighted code:", e);
+    }
+  }
+
 
   window.dqmFailedCheckpoints = [];
 
