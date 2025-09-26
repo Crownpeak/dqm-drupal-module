@@ -473,34 +473,67 @@
           });
           
           if (checkpoint && checkpoint.canHighlight) {
-            if (checkpoint.canHighlight.source === true && checkpoint.canHighlight.page === false) {
-              showSourceButton();
-              const mainCanvas = document.querySelector('.dialog-off-canvas-main-canvas');
-              if (mainCanvas && !mainCanvas.hasAttribute('data-original-content')) {
-                mainCanvas.setAttribute('data-original-content', mainCanvas.innerHTML);
+            if (
+              checkpoint.canHighlight.source === true &&
+              checkpoint.canHighlight.page === false
+            ) {
+              hideSourceButton();
+              const mainCanvas = document.querySelector(
+                ".dialog-off-canvas-main-canvas"
+              );
+              if (
+                mainCanvas &&
+                !mainCanvas.hasAttribute("data-original-content")
+              ) {
+                mainCanvas.setAttribute(
+                  "data-original-content",
+                  mainCanvas.innerHTML
+                );
               }
-              showSourceModalWithHighlight(document.querySelector('.dqm-drupal-module-source-button'), errorId);
+              showSourceModalWithHighlight(
+                document.querySelector(".dqm-drupal-module-source-button"),
+                errorId
+              );
               return;
-            } else if (checkpoint.canHighlight.source === true && checkpoint.canHighlight.page === true) {
+            } else if (
+              checkpoint.canHighlight.source === true &&
+              checkpoint.canHighlight.page === true
+            ) {
               showSourceButton();
-              const mainCanvas = document.querySelector('.dialog-off-canvas-main-canvas');
-              if (mainCanvas && mainCanvas.hasAttribute('data-original-content')) {
-                const originalContent = mainCanvas.getAttribute('data-original-content');
+              const mainCanvas = document.querySelector(
+                ".dialog-off-canvas-main-canvas"
+              );
+              if (
+                mainCanvas &&
+                mainCanvas.hasAttribute("data-original-content")
+              ) {
+                const originalContent = mainCanvas.getAttribute(
+                  "data-original-content"
+                );
                 mainCanvas.innerHTML = originalContent;
-                mainCanvas.removeAttribute('data-original-content');
-                
-                const sourceButton = document.querySelector('.dqm-drupal-module-source-button');
+                mainCanvas.removeAttribute("data-original-content");
+
+                const sourceButton = document.querySelector(
+                  ".dqm-drupal-module-source-button"
+                );
                 if (sourceButton) {
-                  setButtonText($(sourceButton), 'Source');
+                  setButtonText($(sourceButton), "Source");
                 }
               }
             } else {
               hideSourceButton();
-              const mainCanvas = document.querySelector('.dialog-off-canvas-main-canvas');
-              if (mainCanvas && mainCanvas.hasAttribute('data-original-content')) {
-                const originalContent = mainCanvas.getAttribute('data-original-content');
+              const mainCanvas = document.querySelector(
+                ".dialog-off-canvas-main-canvas"
+              );
+              if (
+                mainCanvas &&
+                mainCanvas.hasAttribute("data-original-content")
+              ) {
+                const originalContent = mainCanvas.getAttribute(
+                  "data-original-content"
+                );
                 mainCanvas.innerHTML = originalContent;
-                mainCanvas.removeAttribute('data-original-content');
+                mainCanvas.removeAttribute("data-original-content");
               }
             }
           }

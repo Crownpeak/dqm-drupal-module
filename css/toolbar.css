@@ -473,24 +473,6 @@ span.dqm-cannot-highlight {
   gap: 10px;
 }
 
-.dqm-source-code {
-  margin: 0;
-  padding: 20px;
-  background: #f8f9fa;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 12px;
-  line-height: 1.5;
-  color: #333;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  overflow-x: auto;
-  max-height: 80vh;
-  overflow-y: auto;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
 @keyframes fadeIn {
   from {
     opacity: 0;
