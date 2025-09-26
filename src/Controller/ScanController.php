@@ -1,19 +1,39 @@
 <?php
 namespace Drupal\dqm_drupal_module\Controller;
 
-
 use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Drupal\dqm_drupal_module\Service\ScanService;
-
 
 class ScanController extends ControllerBase {
   protected $scanService;
 
   public function __construct(ScanService $scanService) {
     $this->scanService = $scanService;
+  }
+
+  /**
+   * AJAX endpoint to fetch error highlight HTML for a specific error.
+   */
+  public function getErrorHighlight($assetId, $errorId) {
+    $logger = \Drupal::logger('dqm_drupal_module');
+    $config = \Drupal::config('dqm_drupal_module.settings');
+    $api_key = $config->get('api_key');
+    try {
+      $result = $this->scanService->getErrorHighlight($api_key, $assetId, $errorId, $logger);
+      if ($result && isset($result['success']) && $result['success']) {
+        return new JsonResponse(['success' => true, 'html' => $result['html']]);
+      } else {
+        $msg = isset($result['message']) ? $result['message'] : 'Unknown error';
+        return new JsonResponse(['success' => false, 'message' => $msg]);
+      }
+    } catch (\Exception $e) {
+      $logger->error('Exception in getErrorHighlight: @msg', ['@msg' => $e->getMessage()]);
+      return new JsonResponse(['success' => false, 'message' => $e->getMessage()]);
+    }
   }
 
   public static function create($container) {
@@ -24,17 +44,30 @@ class ScanController extends ControllerBase {
 
   public function scan(Request $request) {
     $logger = \Drupal::logger('dqm_drupal_module');
-    $config = \Drupal::config('dqm_drupal_module.settings');
-    $api_key = $config->get('api_key');
-    $website_id = $config->get('website_id');
-    $content = $request->request->get('content');
-    $asset_id = $request->request->get('assetId');
-    if (empty($content)) {
-      $logger->error('No content provided for scan.');
-      throw new HttpException(400, 'No content provided.');
+    try {
+      $config = \Drupal::config('dqm_drupal_module.settings');
+      $api_key = $config->get('api_key');
+      $website_id = $config->get('website_id');
+      $content = $request->request->get('content');
+      $asset_id = $request->request->get('assetId');
+      if (empty($content)) {
+        $logger->error('No content provided for scan.');
+        return new JsonResponse(['success' => false, 'message' => 'No content provided.'], 400);
+      }
+      if (empty($api_key) || empty($website_id)) {
+        $logger->error('Missing API key or website ID in config.');
+        return new JsonResponse(['success' => false, 'message' => 'Missing API key or website ID in config.'], 500);
+      }
+      $result = $this->scanService->scanContent($api_key, $website_id, $content, $logger, $asset_id);
+      return new JsonResponse($result);
+    } catch (\Exception $e) {
+      $logger->error('Exception in scan(): @msg', ['@msg' => $e->getMessage()]);
+      return new JsonResponse([
+        'success' => false,
+        'message' => 'Server error: ' . $e->getMessage(),
+        'trace' => method_exists($e, 'getTraceAsString') ? $e->getTraceAsString() : null
+      ], 500);
     }
-    $result = $this->scanService->scanContent($api_key, $website_id, $content, $logger, $asset_id);
-    return new JsonResponse($result);
   }
 
   public function getResults($assetId) {
@@ -43,6 +76,30 @@ class ScanController extends ControllerBase {
     $api_key = $config->get('api_key');
     $result = $this->scanService->getResults($api_key, $assetId, $logger);
     return new JsonResponse($result);
+  }
+
+  /**
+   * AJAX endpoint to fetch asset status (including canHighlight info) for a given assetId.
+   */
+  public function getAssetStatus($assetId) {
+    $logger = \Drupal::logger('dqm_drupal_module');
+    $config = \Drupal::config('dqm_drupal_module.settings');
+    $api_key = $config->get('api_key');
+    if (empty($assetId) || empty($api_key)) {
+      return new JsonResponse(['success' => false, 'message' => 'Missing assetId or API key.'], 400);
+    }
+    $result = $this->scanService->getResults($api_key, $assetId, $logger);
+    if (isset($result['success']) && $result['success'] && isset($result['data'])) {
+      $data = $result['data'];
+      $response = [
+        'success' => true,
+        'checkpoints' => isset($data['checkpoints']) ? $data['checkpoints'] : [],
+      ];
+      return new JsonResponse($response);
+    } else {
+      $msg = isset($result['message']) ? $result['message'] : 'Unknown error';
+      return new JsonResponse(['success' => false, 'message' => $msg], 500);
+    }
   }
 
   public function scanFromUrl(Request $request) {
@@ -187,5 +244,24 @@ class ScanController extends ControllerBase {
     }
     $logger->info('Cleaned HTML: removed @count admin elements', ['@count' => $removedCount]);
     return $dom->saveHTML();
+  }
+
+  public function getErrorHighlightSource($assetId, $errorId) {
+    $logger = \Drupal::logger('dqm_drupal_module');
+    $config = \Drupal::config('dqm_drupal_module.settings');
+    $api_key = $config->get('api_key');
+    
+    try {
+      $result = $this->scanService->getErrorHighlightSource($api_key, $assetId, $errorId, $logger);
+      if ($result && isset($result['success']) && $result['success']) {
+        return new JsonResponse(['success' => true, 'html' => $result['html']]);
+      } else {
+        $msg = isset($result['message']) ? $result['message'] : 'Unknown error';
+        return new JsonResponse(['success' => false, 'message' => $msg]);
+      }
+    } catch (\Exception $e) {
+      $logger->error('Exception in getErrorHighlightSource: @msg', ['@msg' => $e->getMessage()]);
+      return new JsonResponse(['success' => false, 'message' => $e->getMessage()]);
+    }
   }
 }

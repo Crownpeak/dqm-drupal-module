@@ -1,3 +1,11 @@
+dqm_drupal_module.asset_status:
+  path: '/dqm-drupal-module/asset-status/{assetId}'
+  defaults:
+    _controller: '\Drupal\dqm_drupal_module\Controller\ScanController::getAssetStatus'
+    _title: 'Asset Status'
+  requirements:
+    _permission: 'access content'
+    assetId: '.+'
 dqm_drupal_module.settings:  
   path: '/admin/config/content/dqm-drupal-module'  
   defaults:  
@@ -36,4 +44,20 @@ dqm_drupal_module.results:
     _controller: '\Drupal\dqm_drupal_module\Controller\ScanController::getResults'
   requirements:
     _permission: 'administer dqm drupal module'
+  methods: [GET]
+
+dqm_drupal_module.error_highlight:
+  path: '/dqm-drupal-module/error-highlight/{assetId}/{errorId}'
+  defaults:
+    _controller: '\Drupal\dqm_drupal_module\Controller\ScanController::getErrorHighlight'
+  requirements:
+    _permission: 'administer dqm drupal module'
+  methods: [GET]
+
+dqm_drupal_module.error_highlight_source:
+  path: '/dqm-drupal-module/error-highlight-source/{assetId}/{errorId}'
+  defaults:
+    _controller: '\Drupal\dqm_drupal_module\Controller\ScanController::getErrorHighlightSource'
+  requirements:
+    _permission: 'access content'
   methods: [GET]

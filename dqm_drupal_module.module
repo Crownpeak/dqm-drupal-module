@@ -28,6 +28,14 @@ function dqm_drupal_module_toolbar() {
           'content' => [
             '#type' => 'container',
             '#attributes' => ['class' => ['dqm-drupal-module-toolbar-tray']],
+            'source_button' => [
+              '#type' => 'button',
+              '#value' => t('Source'),
+              '#attributes' => [
+                'class' => ['dqm-drupal-module-source-button'],
+                'style' => 'display: none;',
+              ],
+            ],
             'run_quality_check' => [
               '#type' => 'button',
               '#value' => t('Run Quality Check'),
@@ -50,6 +58,9 @@ function dqm_drupal_module_page_attachments(array &$attachments) {
   try {
     if (\Drupal::currentUser()->hasPermission('administer dqm drupal module') && _dqm_drupal_module_should_show_toolbar()) {
       $attachments['#attached']['library'][] = 'dqm_drupal_module/toolbar';
+      $config = \Drupal::config('dqm_drupal_module.settings');
+      $api_key = $config->get('api_key');
+      $attachments['#attached']['drupalSettings']['dqmDrupalModule']['apiKey'] = $api_key;
     }
   } catch (\Exception $e) {
     \Drupal::messenger()->addError(t('Error attaching DQM toolbar assets: @msg', ['@msg' => $e->getMessage()]));
