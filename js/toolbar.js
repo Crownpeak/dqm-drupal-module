@@ -1185,7 +1185,7 @@
           <span class="dqm-spinner"></span>
           Loading source code...
         </div>
-        <pre class="dqm-source-code" style="display: none;"></pre>
+        <div class="dqm-source-code" style="display: none;"></div>
       </div>
     `;
 
@@ -1214,9 +1214,11 @@
 
             if (codeElement && loadingElement) {
               if (shouldHighlightError && activeErrorId) {
-                codeElement.innerHTML = response.html;
+                const shadow = codeElement.attachShadow({ mode: "open" });
+                shadow.innerHTML = response.html;
               } else {
-                codeElement.textContent = response.html;
+                const shadow = codeElement.attachShadow({ mode: "open" });
+                shadow.innerHTML = `<pre style="font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.4; white-space: pre-wrap; margin: 0;">${response.html}</pre>`;
               }
               
               loadingElement.style.display = 'none';
@@ -1313,7 +1315,7 @@
           <span class="dqm-spinner"></span>
           Loading highlighted source code...
         </div>
-        <pre class="dqm-source-code" style="display: none;"></pre>
+        <div class="dqm-source-code" style="display: none;"></div>
       </div>
     `;
 
@@ -1335,7 +1337,8 @@
               );
 
               if (codeElement && loadingElement) {
-                codeElement.innerHTML = response.html; 
+                const shadow = codeElement.attachShadow({ mode: "open" });
+                shadow.innerHTML = response.html;
                 loadingElement.style.display = "none";
                 codeElement.style.display = "block";
 

@@ -495,25 +495,12 @@ span.dqm-cannot-highlight {
   }
 }
 
-.dqm-source-code .astError,
-.dqm-source-code .astHighlightFull {
-  background-color: yellow !important;
-  color: black !important;
-  font-weight: bold;
-  padding: 2px;
-  border-radius: 2px;
-}
-
 .dqm-source-code {
   font-family: 'Courier New', monospace;
   font-size: 12px;
   line-height: 1.4;
-  white-space: pre-wrap;
-  word-break: break-all;
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
   border-radius: 4px;
   padding: 15px;
-  max-height: 70vh;
   overflow: auto;
+  max-width: 90%;
 }
