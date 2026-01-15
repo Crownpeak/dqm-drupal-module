@@ -1,6 +1,407 @@
 (function ($, Drupal, once) {
   "use strict";
 
+  const SUPPORTED_LOCALES = ['en', 'de', 'es'];
+  const STORAGE_KEY_LOCALE = 'dqm_drupal_module_locale';
+  
+  let currentLocale = 'en';
+  let localeSource = 'default';
+  let userOverride = false;
+  let aiTranslationManager = null;
+  let aiContext = null;
+
+  if (typeof window.AIContextManager !== 'undefined') {
+    try {
+      const settings = Drupal.settings?.dqmDrupalModule || drupalSettings?.dqmDrupalModule || {};
+      console.log('[DQM] Initializing AI features with settings:', settings);
+      
+      aiContext = new window.AIContextManager({
+        openAiApiKey: settings.openai_api_key || '',
+        openAiModel: settings.openai_model || 'gpt-4o-mini',
+        openAiBaseUrl: settings.openai_base_url || 'https://api.openai.com/v1',
+        reasoningEffort: settings.reasoning_effort || 'medium'
+      });
+      console.log('[DQM] AIContextManager initialized');
+
+      if (typeof window.AITranslationManager !== 'undefined') {
+        aiTranslationManager = new window.AITranslationManager(aiContext);
+        console.log('[DQM] AITranslationManager initialized');
+      } else {
+        console.warn('[DQM] AITranslationManager class not found');
+      }
+    } catch (error) {
+      console.error('[DQM] Failed to initialize AI features:', error);
+    }
+  } else {
+    console.warn('[DQM] AIContextManager class not found - translation features will not be available');
+  }
+
+  function normalizeLocale(locale) {
+    if (!locale) return null;
+    const normalized = locale.toLowerCase().split('-')[0];
+    return SUPPORTED_LOCALES.includes(normalized) ? normalized : null;
+  }
+
+  function persistLocale(locale) {
+    if (locale) {
+      localStorage.setItem(STORAGE_KEY_LOCALE, locale);
+    } else {
+      localStorage.removeItem(STORAGE_KEY_LOCALE);
+    }
+  }
+
+  function resolveLocale() {
+    const stored = localStorage.getItem(STORAGE_KEY_LOCALE);
+    if (stored) {
+      const normalized = normalizeLocale(stored);
+      if (normalized) {
+        localeSource = 'storage';
+        userOverride = true;
+        return normalized;
+      }
+    }
+
+    const browserLang = navigator.language || navigator.userLanguage;
+    const normalized = normalizeLocale(browserLang);
+    if (normalized) {
+      localeSource = 'browser';
+      return normalized;
+    }
+
+    localeSource = 'default';
+    return 'en';
+  }
+
+  function changeLanguage(newLocale) {
+    const normalized = normalizeLocale(newLocale);
+    console.log('[DQM] changeLanguage called with:', newLocale, 'normalized to:', normalized);
+    
+    if (!normalized) {
+      console.warn('[DQM] Invalid locale:', newLocale);
+      return false;
+    }
+    
+    if (normalized === currentLocale) {
+      console.log('[DQM] Language already set to:', currentLocale);
+      return false;
+    }
+    
+    try {
+      currentLocale = normalized;
+      localeSource = 'user';
+      userOverride = true;
+      persistLocale(normalized);
+      
+      console.log('[DQM] Language changed successfully to:', normalized);
+      console.log('[DQM] Saved to localStorage:', localStorage.getItem(STORAGE_KEY_LOCALE));
+      
+      if (aiContext) {
+        aiContext.updateLanguage(normalized);
+        console.log('[DQM] Updated AI context language');
+      }
+      
+      if (typeof window.DQM_I18N !== 'undefined') {
+        window.DQM_I18N.setCurrentLocale(normalized);
+        window.DQM_I18N.loadLanguageFile(normalized).then(() => {
+          console.log('[DQM] Loaded translations for', normalized);
+          updateUITranslations();
+        });
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('[DQM] Failed to change language:', error);
+      return false;
+    }
+  }
+
+  function resetLanguage() {
+    persistLocale(null);
+    const resolved = resolveLocale();
+    currentLocale = resolved;
+    return resolved;
+  }
+
+  function createLanguageSwitcher() {
+    console.log('[DQM] Creating language switcher, current locale:', currentLocale, 'source:', localeSource);
+    
+    const container = document.createElement('div');
+    container.className = 'dqm-language-switcher';
+
+    const button = document.createElement('button');
+    button.className = 'dqm-language-button';
+    button.setAttribute('aria-label', 'Language');
+    button.type = 'button';
+
+    button.innerHTML = '<svg class="dqm-translate-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>';
+
+    const menu = document.createElement('div');
+    menu.className = 'dqm-language-menu';
+    menu.style.display = 'none';
+    console.log('[DQM] Language menu created, initial display:', menu.style.display);
+
+    const flagSvg = {
+      en: '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="14"><rect width="22" height="14" fill="#fff"/><g stroke-width="0"><rect y="0" width="22" height="2" fill="#b22234"/><rect y="3" width="22" height="2" fill="#b22234"/><rect y="6" width="22" height="2" fill="#b22234"/><rect y="9" width="22" height="2" fill="#b22234"/><rect y="12" width="22" height="2" fill="#b22234"/><rect width="10" height="8" fill="#3c3b6e"/></g></svg>',
+      de: '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="14"><rect width="22" height="14" fill="#ffce00"/><rect y="0" width="22" height="4.67" fill="#000"/><rect y="9.33" width="22" height="4.67" fill="#dd0000"/></svg>',
+      es: '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="14"><rect width="22" height="14" fill="#c60b1e"/><rect y="4" width="22" height="6" fill="#ffc400"/></svg>'
+    };
+
+    const languageNames = {
+      en: 'English',
+      de: 'German',
+      es: 'Spanish'
+    };
+
+    SUPPORTED_LOCALES.forEach(function(locale) {
+      const menuItem = document.createElement('div');
+      menuItem.className = 'dqm-language-menu-item';
+      if (locale === currentLocale) {
+        menuItem.classList.add('active');
+      }
+
+      const flagContainer = document.createElement('div');
+      flagContainer.className = 'dqm-flag-container';
+      flagContainer.innerHTML = flagSvg[locale];
+
+      const labelContainer = document.createElement('div');
+      labelContainer.className = 'dqm-language-label';
+
+      const labelRow = document.createElement('div');
+      labelRow.className = 'dqm-language-label-row';
+
+      const languageName = document.createElement('div');
+      languageName.className = 'dqm-language-name';
+      languageName.textContent = t(languageNames[locale]);
+
+      const code = document.createElement('span');
+      code.className = 'dqm-language-code';
+      code.textContent = locale.toUpperCase();
+
+      labelRow.appendChild(languageName);
+      labelRow.appendChild(code);
+      labelContainer.appendChild(labelRow);
+
+      if (locale === currentLocale && localeSource !== 'default') {
+        const sourceLabel = document.createElement('div');
+        sourceLabel.className = 'dqm-language-source';
+        sourceLabel.textContent = localeSource === 'storage' ? t('Custom selected') : t('Browser default');
+        labelContainer.appendChild(sourceLabel);
+      }
+
+      menuItem.appendChild(flagContainer);
+      menuItem.appendChild(labelContainer);
+
+      menuItem.addEventListener('click', function() {
+        console.log('[DQM] Language menu item clicked:', locale);
+        if (locale !== currentLocale) {
+          console.log('[DQM] Changing language from', currentLocale, 'to', locale);
+          if (changeLanguage(locale)) {
+            console.log('[DQM] Language changed successfully - UI will update automatically');
+          }
+        }
+        menu.style.display = 'none';
+      });
+
+      menu.appendChild(menuItem);
+    });
+    
+    console.log('[DQM] Added', SUPPORTED_LOCALES.length, 'language menu items');
+
+    if (userOverride) {
+      console.log('[DQM] Adding reset option (userOverride=true)');
+      const divider = document.createElement('div');
+      divider.className = 'dqm-menu-divider';
+      menu.appendChild(divider);
+
+      const resetItem = document.createElement('div');
+      resetItem.className = 'dqm-language-menu-item dqm-reset-item';
+      resetItem.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg><span>' + t('Reset') + '</span>';
+      resetItem.addEventListener('click', function() {
+        console.log('[DQM] Reset button clicked');
+        resetLanguage();
+        window.location.reload();
+      });
+      menu.appendChild(resetItem);
+    }
+
+    button.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const isVisible = menu.style.display === 'block';
+      console.log('[DQM] Language button clicked, menu currently:', isVisible ? 'visible' : 'hidden');
+      menu.style.display = isVisible ? 'none' : 'block';
+      console.log('[DQM] Menu display set to:', menu.style.display);
+    });
+
+    document.addEventListener('click', function(e) {
+      if (!container.contains(e.target)) {
+        if (menu.style.display === 'block') {
+          console.log('[DQM] Closing menu (clicked outside)');
+          menu.style.display = 'none';
+        }
+      }
+    });
+
+    container.appendChild(button);
+    container.appendChild(menu);
+
+    console.log('[DQM] Language switcher created successfully');
+    return container;
+  }
+
+  currentLocale = resolveLocale();
+
+  if (typeof window.DQM_I18N !== 'undefined') {
+    console.log('[DQM] Initializing i18n for locale:', currentLocale);
+    window.DQM_I18N.initializeTranslations(currentLocale).then(() => {
+      console.log('[DQM] i18n initialized, updating UI translations');
+      updateUITranslations();
+    }).catch(error => {
+      console.error('[DQM] Failed to initialize i18n:', error);
+    });
+  } else {
+    console.warn('[DQM] DQM_I18N not available - UI translations will not work');
+  }
+
+  function t(key) {
+    if (typeof window.DQM_I18N !== 'undefined') {
+      return window.DQM_I18N.getTranslation(key);
+    }
+    return key;
+  }
+
+  function updateUITranslations() {
+    console.log('[DQM] Updating UI translations for locale:', currentLocale);
+    
+    const runCheckButton = document.querySelector('.dqm-drupal-module-run-quality-check');
+    if (runCheckButton) {
+      const translatedText = t('Run Quality Check');
+      runCheckButton.value = translatedText;
+      console.log('[DQM] Updated button text to:', translatedText);
+    }
+    
+    const runCheckButtonSecondary = document.querySelector('.dqm-drupal-module-run-quality-check-secondary');
+    if (runCheckButtonSecondary) {
+      runCheckButtonSecondary.textContent = t('Run Quality Check');
+    }
+    
+    const sourceButton = document.querySelector('.dqm-drupal-module-source-button');
+    if (sourceButton) {
+      sourceButton.value = t('Source');
+    }
+    
+    const headerTitle = document.querySelector('.dqm-header-title');
+    if (headerTitle) {
+      headerTitle.textContent = t('title') || 'Digital Quality and Accessibility';
+    }
+    
+    const overviewTitle = document.querySelector('.dqm-overview-section h3');
+    if (overviewTitle) {
+      overviewTitle.innerHTML = `📊 ${t('Quality Overview')}`;
+    }
+    
+    const legendItems = document.querySelectorAll('.dqm-legend-item span');
+    legendItems.forEach((item, index) => {
+      const text = item.textContent.trim();
+      const match = text.match(/\((\d+)\)/);
+      if (match) {
+        const count = match[1];
+        if (text.toLowerCase().includes('pass') || text.toLowerCase().includes('bestanden') || text.toLowerCase().includes('aprobado')) {
+          item.textContent = `${t('Passed')} (${count})`;
+        } else if (text.toLowerCase().includes('fail') || text.toLowerCase().includes('fehlgeschlagen') || text.toLowerCase().includes('fallido')) {
+          item.textContent = `${t('Failed')} (${count})`;
+        }
+      }
+    });
+    
+    document.querySelectorAll('.dqm-card h3').forEach(h3 => {
+      const text = h3.textContent.trim();
+      if (text.includes('Quality Breakdown') || text.includes('Qualitätsübersicht') || text.includes('Desglose de calidad')) {
+        h3.innerHTML = `📈 ${t('Quality Breakdown')}`;
+      } else if (text.includes('Failed Checkpoints') || text.includes('Fehlgeschlagene Prüfpunkte') || text.includes('Puntos de control fallidos')) {
+        const match = text.match(/\((\d+)\)/);
+        if (match) {
+          h3.innerHTML = `❌ ${t('Failed Checkpoints')} (${match[1]})`;
+        }
+      }
+    });
+    
+    document.querySelectorAll('.dqm-topic-header span:last-child').forEach(span => {
+      const text = span.textContent;
+      const match = text.match(/(\d+)\/(\d+)\s+(.+)/i);
+      if (match) {
+        span.textContent = `${match[1]}/${match[2]} ${t('passed')}`;
+      }
+    });
+    
+    const filterLabel = document.querySelector('.dqm-topics-label');
+    if (filterLabel) {
+      filterLabel.textContent = t('Filter by Topic:');
+    }
+    
+    const allTopicsOption = document.querySelector('.dqm-topics-filter option[value=""]');
+    if (allTopicsOption) {
+      allTopicsOption.textContent = t('All Topics');
+    }
+    
+    document.querySelectorAll('.badge').forEach(badge => {
+      const currentText = badge.textContent.trim();
+      
+      const reverseMap = {
+        'Barrierefreiheit': 'Accessibility',
+        'Accesibilidad': 'Accessibility',
+        'Marke': 'Brand',
+        'Marca': 'Brand',
+        'Vorschriften': 'Regulatory',
+        'Regulatorio': 'Regulatory',
+        'Rechtliches': 'Legal',
+        'Benutzerfreundlichkeit': 'Usability',
+        'Usabilidad': 'Usability'
+      };
+      
+      const englishKey = reverseMap[currentText] || currentText;
+      badge.textContent = t(englishKey);
+    });
+    
+    document.querySelectorAll('.dqm-cannot-highlight').forEach(el => {
+      el.textContent = t('Cannot highlight');
+    });
+    
+    document.querySelectorAll('.dqm-language-menu-item').forEach((menuItem, index) => {
+      const locales = ['en', 'de', 'es'];
+      const locale = locales[index];
+      if (locale) {
+        if (locale === currentLocale) {
+          menuItem.classList.add('active');
+        } else {
+          menuItem.classList.remove('active');
+        }
+        
+        const languageNames = { en: 'English', de: 'German', es: 'Spanish' };
+        const nameElement = menuItem.querySelector('.dqm-language-name, span');
+        if (nameElement && !nameElement.classList.contains('dqm-language-code')) {
+          nameElement.textContent = t(languageNames[locale]);
+        }
+        
+        const sourceLabel = menuItem.querySelector('.dqm-language-source');
+        if (sourceLabel) {
+          const text = sourceLabel.textContent.trim();
+          if (text.includes('Custom') || text.includes('Durch') || text.includes('Seleccionado')) {
+            sourceLabel.textContent = t('Custom selected');
+          } else if (text.includes('Browser') || text.includes('Predeterminado')) {
+            sourceLabel.textContent = t('Browser default');
+          }
+        }
+      }
+    });
+    
+    const resetItem = document.querySelector('.dqm-reset-item span');
+    if (resetItem) {
+      resetItem.textContent = t('Reset');
+    }
+    
+    console.log('[DQM] UI translations updated');
+  }
+
   Drupal.behaviors.dqmDrupalModuleToolbar = {
     attach: function (context, settings) {
       try {
@@ -34,6 +435,21 @@
 
           $document.data('dqm-drupal-module-events-bound', true);
         }
+
+        once('dqm-language-switcher', '.dqm-header-container', context).forEach(function(headerElement) {
+          console.log('[DQM] Adding language switcher to header');
+          const languageSwitcher = createLanguageSwitcher();
+          
+          let actionsContainer = headerElement.querySelector('.dqm-header-actions');
+          if (!actionsContainer) {
+            actionsContainer = document.createElement('div');
+            actionsContainer.className = 'dqm-header-actions';
+            headerElement.appendChild(actionsContainer);
+          }
+          
+          actionsContainer.appendChild(languageSwitcher);
+          console.log('[DQM] Language switcher added to header actions');
+        });
       } catch (e) {
         alert('Error initializing DQM toolbar: ' + e.message);
       }
@@ -249,10 +665,72 @@
   }
 
   function displayQualityResults(data, container) {
+    console.log('[DQM] displayQualityResults called with', data?.checkpoints?.length, 'checkpoints');
+    console.log('[DQM] Current locale:', currentLocale);
+    
     if (!data || !data.checkpoints || !Array.isArray(data.checkpoints)) {
       container.innerHTML = '<div class="dqm-card"><p>No quality results available.</p></div>';
       return;
     }
+
+    if (currentLocale !== 'en' && aiTranslationManager && data.checkpoints.length > 0) {
+      console.log('[DQM] ✅ Will translate checkpoint CONTENT to:', currentLocale);
+      console.log('[DQM] Note: UI text is already translated via i18n JSON files');
+      
+      const translateAndDisplay = async () => {
+        try {
+          console.log('[DQM] 🌍 Starting AI translation of checkpoint content to', currentLocale);
+          console.log('[DQM] Step 1: Translating checkpoint titles (fast)');
+          
+          await aiTranslationManager.translateCheckpoints(
+            data.checkpoints,
+            currentLocale,
+            (progress) => {
+              console.log('[DQM] 📊 Title translation progress:', progress);
+            },
+            true // titles only
+          );
+          
+          console.log('[DQM] ✅ Checkpoint titles translated');
+          console.log('[DQM] Step 2: Translating full checkpoint content');
+          
+          await aiTranslationManager.translateCheckpoints(
+            data.checkpoints,
+            currentLocale,
+            (progress) => {
+              console.log('[DQM] 📊 Full content translation progress:', progress);
+            },
+            false // full translation
+          );
+          
+          console.log('[DQM] ✅ Full checkpoint content translation complete');
+          console.log('[DQM] Re-rendering UI with translated checkpoint data');
+          renderQualityResults(data, container);
+        } catch (error) {
+          console.error('[DQM] ❌ Checkpoint translation failed:', error);
+          console.error('[DQM] Error details:', error.message, error.stack);
+          console.log('[DQM] Falling back to English checkpoint content');
+          renderQualityResults(data, container);
+        }
+      };
+      
+      translateAndDisplay();
+      return;
+    } else {
+      if (currentLocale === 'en') {
+        console.log('[DQM] ⏭️ Skipping checkpoint translation (English selected)');
+      } else if (!aiTranslationManager) {
+        console.log('[DQM] ⏭️ Skipping checkpoint translation (AI manager not available)');
+      } else {
+        console.log('[DQM] ⏭️ Skipping checkpoint translation (no checkpoints)');
+      }
+    }
+
+    console.log('[DQM] Rendering results (UI text from i18n, checkpoint content in English)');
+    renderQualityResults(data, container);
+  }
+
+  function renderQualityResults(data, container) {
 
     const sourceButton = document.querySelector('.dqm-drupal-module-source-button');
     if (sourceButton) {
@@ -308,9 +786,11 @@
 
     const sortedTopics = Object.keys(topicCounts).sort();
     const percent = totalCount > 0 ? Math.round((passedCount / totalCount) * 100) : 0;
-    let html =
-      `<div class="dqm-card">
-        <h3>📊 Quality Overview</h3>
+    const failedCount = totalCount - passedCount;
+
+    let html = `
+      <div class="dqm-card dqm-overview-section">
+        <h3>📊 ${t('Quality Overview')}</h3>
         <div class="dqm-chart-container">
           <div class="dqm-pie-chart" data-percent="${percent}">
             <div class="percent-label">${percent}%</div>
@@ -318,15 +798,16 @@
           <div class="dqm-legend">
             <div class="dqm-legend-item">
               <div class="dqm-legend-color passed"></div>
-              <span>Passed (${passedCount})</span>
+              <span>${t('Passed')} (${passedCount})</span>
             </div>
             <div class="dqm-legend-item">
               <div class="dqm-legend-color failed"></div>
-              <span>Failed (${totalCount - passedCount})</span>
+              <span>${t('Failed')} (${failedCount})</span>
             </div>
           </div>
         </div>
-      </div>`;
+      </div>
+    `;
 
     let topicsHtml = '';
     for (const name of sortedTopics) {
@@ -337,7 +818,7 @@
       topicsHtml += `<div class="dqm-topic-breakdown">
         <div class="dqm-topic-header">
           <span class="dqm-topic-badge" style="background:${topic.color}">${name}</span>
-          <span>${topic.passed}/${topic.total} passed</span>
+          <span>${topic.passed}/${topic.total} ${t('passed')}</span>
         </div>
         <div class="dqm-progress-bar">
           <div class="dqm-progress-fill" style="width:${topic.percent}%;background:${topic.color}"></div>
@@ -346,7 +827,7 @@
     }
 
     html += `<div class="dqm-card">
-      <h3>📈 Quality Breakdown</h3>
+      <h3>📈 ${t('Quality Breakdown')}</h3>
       ${topicsHtml}
     </div>`;
 
@@ -377,7 +858,7 @@
         if (checkpoint.topics.length > 0) {
           const badgesHtml = checkpoint.topics.map(topic => {
             const badgeClassName = topicCounts[topic] ? topicCounts[topic].className : '';
-            return `<span class="badge ${badgeClassName}">${topic}</span>`;
+            return `<span class="badge ${badgeClassName}">${t(topic)}</span>`;
           }).join('');
           checkpointBadgesHtml = `<div class="checkpoint-badges" style="display:flex;margin-top:4px;">${badgesHtml}</div>`;
         }
@@ -387,13 +868,13 @@
 
         if (checkpoint.hasOwnProperty('_canHighlightPage') && checkpoint._canHighlightPage === false &&
             checkpoint.canHighlight && checkpoint.canHighlight.source === false) {
-          cannotHighlightHtml = '<span class="dqm-cannot-highlight">Cannot highlight</span>';
+          cannotHighlightHtml = `<span class="dqm-cannot-highlight">${t('Cannot highlight')}</span>`;
           notHighlightable = true;
         }
         else if (checkpoint.canHighlight && 
                 checkpoint.canHighlight.page === false && 
                 checkpoint.canHighlight.source === false) {
-          cannotHighlightHtml = '<span class="dqm-cannot-highlight">Cannot highlight</span>';
+          cannotHighlightHtml = `<span class="dqm-cannot-highlight">${t('Cannot highlight')}</span>`;
           notHighlightable = true;
         }
         let notClickableClass = notHighlightable ? ' not-highlightable' : '';
@@ -410,14 +891,20 @@
       }
 
       html += `<div class="dqm-card">
-        <h3>❌ Failed Checkpoints (${failedCheckpoints.length})</h3>
-        ${topicsFilterHtml}
+        <h3>❌ ${t('Failed Checkpoints')} (${failedCheckpoints.length})</h3>
+        <div class="dqm-topics-filter-container">
+          <label class="dqm-topics-label">${t('Filter by Topic:')}</label>
+          <select class="dqm-topics-filter">
+            <option value="">${t('All Topics')}</option>
+            ${topicOptionsHtml}
+          </select>
+        </div>
         <div class="dqm-checkpoints-list" id="dqm-checkpoints-list">
           ${failedCheckpointsHtml}
         </div>
       </div>`;
     }
-    html += '<button class="dqm-drupal-module-run-quality-check-secondary button">Run Quality Check</button>';
+    html += `<button class="dqm-drupal-module-run-quality-check-secondary button">${t('Run Quality Check')}</button>`;
 
     setTimeout(function () {
       const checkpointItems = container.querySelectorAll('.dqm-checkpoint-item[data-error-id]');
@@ -808,9 +1295,9 @@
         const cardTitle = container.querySelector('.dqm-card h3');
         if (cardTitle && selectedTopic !== 'all') {
           const selectedTopicName = e.target.options[e.target.selectedIndex].text.split(' (')[0];
-          cardTitle.textContent = '❌ Failed Checkpoints - ' + selectedTopicName + ' (' + visibleCount + ')';
+          cardTitle.textContent = '❌ ' + t('Failed Checkpoints') + ' - ' + selectedTopicName + ' (' + visibleCount + ')';
         } else if (cardTitle) {
-          cardTitle.textContent = '❌ Failed Checkpoints (' + failedCheckpoints.length + ')';
+          cardTitle.textContent = '❌ ' + t('Failed Checkpoints') + ' (' + failedCheckpoints.length + ')';
         }
       });
     }

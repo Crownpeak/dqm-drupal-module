@@ -4,6 +4,32 @@
   padding-left: 32px;
 }
 
+/* Header Container */
+.dqm-header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 16px 16px 0 16px;
+}
+
+.dqm-header-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #212529;
+  flex: 1;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.dqm-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
 input.dqm-drupal-module-run-quality-check.button,
 .dqm-drupal-module-run-quality-check.button,
 input.dqm-drupal-module-run-quality-check-secondary.button,
@@ -285,11 +311,11 @@ span.dqm-cannot-highlight {
 }
 
 .toolbar-tab #toolbar-item-dqm-drupal-module-tray .toolbar-tray.toolbar-tray-vertical.is-active {
-  width: 18rem !important;
+  width: 20rem !important;
 }
 
 .toolbar-tab #toolbar-item-dqm-drupal-module-tray .toolbar-tray.toolbar-tray-horizontal.is-active {
-  width: 18rem;
+  width: 20rem;
   max-height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
@@ -504,3 +530,179 @@ span.dqm-cannot-highlight {
   overflow: auto;
   max-width: 90%;
 }
+
+/* Language Switcher Styles */
+.dqm-language-switcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.dqm-language-select {
+  padding: 6px 32px 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  appearance: none;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><path fill="%23666" d="M6 9L1 4h10z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+.dqm-language-select:hover {
+  border-color: #b604d4;
+}
+
+.dqm-language-select:focus {
+  outline: none;
+  border-color: #b604d4;
+  box-shadow: 0 0 0 2px rgba(182, 4, 212, 0.1);
+}
+
+.dqm-locale-source {
+  font-size: 11px;
+  color: #666;
+  padding: 2px 6px;
+  background: #f0f0f0;
+  border-radius: 3px;
+}
+
+.dqm-locale-reset {
+  padding: 4px 8px;
+  font-size: 11px;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dqm-locale-reset:hover {
+  background: #e0e0e0;
+  border-color: #b604d4;
+}
+
+.dqm-language-button, .dqm-ai-assistant-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.04);
+  color: rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  padding: 0;
+}
+
+.dqm-language-button:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.dqm-language-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dqm-translate-icon {
+  width: 20px;
+  height: 20px;
+  fill: #666;
+}
+
+.dqm-language-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 200px;
+}
+
+.dqm-language-menu-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.2s;
+}
+
+.dqm-language-menu-item:not(.dqm-reset-item):hover {
+  background: #f8f8f8;
+}
+
+.dqm-language-menu-item.active {
+  background: #f0e6f7;
+}
+
+.dqm-flag-container {
+  width: 22px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.dqm-flag-container svg {
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
+}
+
+.dqm-language-label {
+  flex: 1;
+  font-size: 13px;
+}
+
+.dqm-language-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dqm-language-code {
+  font-size: 10px;
+  color: #999;
+  font-weight: 600;
+}
+
+.dqm-language-source {
+  font-size: 10px;
+  color: #666;
+  margin-top: 2px;
+}
+
+.dqm-menu-divider {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 8px 0;
+}
+
+.dqm-reset-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #666;
+}
+
+.dqm-reset-item svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.dqm-reset-item:hover {
+  background: #f8f8f8;
+  color: #333;
+}
+

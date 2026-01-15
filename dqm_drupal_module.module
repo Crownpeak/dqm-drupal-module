@@ -28,6 +28,13 @@ function dqm_drupal_module_toolbar() {
           'content' => [
             '#type' => 'container',
             '#attributes' => ['class' => ['dqm-drupal-module-toolbar-tray']],
+            'header' => [
+              '#type' => 'container',
+              '#attributes' => ['class' => ['dqm-header-container']],
+              'title' => [
+                '#markup' => '<h2 class="dqm-header-title">' . t('Digital Quality and Accessibility') . '</h2>',
+              ],
+            ],
             'source_button' => [
               '#type' => 'button',
               '#value' => t('Source'),
@@ -60,7 +67,20 @@ function dqm_drupal_module_page_attachments(array &$attachments) {
       $attachments['#attached']['library'][] = 'dqm_drupal_module/toolbar';
       $config = \Drupal::config('dqm_drupal_module.settings');
       $api_key = $config->get('api_key');
+      $openai_api_key = $config->get('openai_api_key');
+      $openai_model = $config->get('openai_model') ?: 'gpt-4o-mini';
+      $openai_base_url = $config->get('openai_base_url') ?: 'https://api.openai.com/v1';
+      $reasoning_effort = $config->get('reasoning_effort') ?: 'medium';
+      
+      // Get module path for language files
+      $module_path = '/' . \Drupal::service('extension.list.module')->getPath('dqm_drupal_module') . '/';
+      
       $attachments['#attached']['drupalSettings']['dqmDrupalModule']['apiKey'] = $api_key;
+      $attachments['#attached']['drupalSettings']['dqmDrupalModule']['openai_api_key'] = $openai_api_key;
+      $attachments['#attached']['drupalSettings']['dqmDrupalModule']['openai_model'] = $openai_model;
+      $attachments['#attached']['drupalSettings']['dqmDrupalModule']['openai_base_url'] = $openai_base_url;
+      $attachments['#attached']['drupalSettings']['dqmDrupalModule']['reasoning_effort'] = $reasoning_effort;
+      $attachments['#attached']['drupalSettings']['dqmDrupalModule']['modulePath'] = $module_path;
     }
   } catch (\Exception $e) {
     \Drupal::messenger()->addError(t('Error attaching DQM toolbar assets: @msg', ['@msg' => $e->getMessage()]));

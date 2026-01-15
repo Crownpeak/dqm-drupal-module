@@ -1,9 +1,44 @@
 toolbar:
+  version: 1.x
+  js:
+    js/toolbar.js: {}
   css:
     theme:
       css/toolbar.css: {}
-  js:
-    js/toolbar.js: {}
   dependencies:
-    - core/drupalSettings
-    - core/jquery
+    - dqm_drupal_module/dqm_i18n
+    - dqm_drupal_module/ai_context
+    - dqm_drupal_module/ai_helpers
+    - dqm_drupal_module/ai_translation_manager
+    - dqm_drupal_module/ai_features_css
+
+dqm_i18n:
+  version: 1.x
+  js:
+    js/dqm-i18n.js: {}
+
+ai_context:
+  version: 1.x
+  js:
+    js/ai-context.js: {}
+
+ai_helpers:
+  version: 1.x
+  js:
+    js/ai-helpers.js: {}
+  dependencies:
+    - dqm_drupal_module/ai_context
+
+ai_translation_manager:
+  version: 1.x
+  js:
+    js/ai-translation-manager.js: {}
+  dependencies:
+    - dqm_drupal_module/ai_context
+    - dqm_drupal_module/ai_helpers
+
+ai_features_css:
+  version: 1.x
+  css:
+    theme:
+      css/ai-features.css: {}

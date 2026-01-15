@@ -61,3 +61,19 @@ dqm_drupal_module.error_highlight_source:
   requirements:
     _permission: 'access content'
   methods: [GET]
+
+dqm_drupal_module.translate:
+  path: '/dqm-drupal-module/translate'
+  defaults:
+    _controller: '\Drupal\dqm_drupal_module\Controller\TranslationController::translateCheckpoints'
+  methods: [POST]
+  requirements:
+    _permission: 'access content'
+
+dqm_drupal_module.clear_translation_cache:
+  path: '/dqm-drupal-module/clear-translation-cache'
+  defaults:
+    _controller: '\Drupal\dqm_drupal_module\Controller\TranslationController::clearTranslationCache'
+  methods: [POST]
+  requirements:
+    _permission: 'access content'

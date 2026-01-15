@@ -39,6 +39,64 @@ class SettingsForm extends ConfigFormBase {
       '#description' => $this->t('Your DQM Website ID. If you are unsure what this is, please contact support.'),  
       '#placeholder' => $this->t('Enter your Website ID'),
     ];
+
+    // AI Assistant Configuration section.
+    $form['ai_section'] = [
+      '#type' => 'details',
+      '#title' => $this->t('AI Assistant Configuration'),
+      '#description' => $this->t('Configure OpenAI API settings for translation and summary features.'),
+      '#open' => FALSE,
+    ];
+
+    $form['ai_section']['openai_api_key'] = [
+      '#type' => 'password',
+      '#title' => $this->t('OpenAI API Key'),
+      '#description' => $this->t('Your OpenAI API key is required for AI features. Get one at https://platform.openai.com/api-keys. Leave blank to keep existing key.'),
+      '#placeholder' => $config->get('openai_api_key') ? '••••••••••••••••' : $this->t('Enter your OpenAI API key (sk-...)'),
+      '#attributes' => [
+        'autocomplete' => 'off',
+      ],
+    ];
+
+    $form['ai_section']['openai_base_url'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('OpenAI Base URL'),
+      '#default_value' => $config->get('openai_base_url') ?: 'https://api.openai.com/v1',
+      '#description' => $this->t('OpenAI-compatible API base URL. Use default for OpenAI or custom for proxies.'),
+      '#placeholder' => 'https://api.openai.com/v1',
+    ];
+
+    $form['ai_section']['openai_model'] = [
+      '#type' => 'select',
+      '#title' => $this->t('OpenAI Model'),
+      '#default_value' => $config->get('openai_model') ?: 'gpt-4o-mini',
+      '#options' => [
+        'gpt-5.2' => $this->t('gpt-5.2 🆕'),
+        'gpt-4o-mini' => $this->t('gpt-4o-mini (Recommended)'),
+        'gpt-4o' => $this->t('gpt-4o'),
+        'gpt-4.1-mini' => $this->t('gpt-4.1-mini'),
+        'gpt-4.1' => $this->t('gpt-4.1'),
+      ],
+      '#description' => $this->t('Choose the OpenAI model for AI features. gpt-4o-mini offers the best balance of cost and quality.'),
+    ];
+
+    $form['ai_section']['reasoning_effort'] = [
+      '#type' => 'select',
+      '#title' => $this->t('🧠 Reasoning Effort (GPT-5 only)'),
+      '#default_value' => $config->get('reasoning_effort') ?: 'medium',
+      '#options' => [
+        'low' => $this->t('Fast - Quick responses, lower cost'),
+        'medium' => $this->t('Balanced - Good quality and speed'),
+        'high' => $this->t('Thorough - Best quality, slower'),
+      ],
+      '#description' => $this->t('Controls how thoroughly GPT-5 analyzes content. Only applies to GPT-5 models.'),
+      '#states' => [
+        'visible' => [
+          ':input[name="openai_model"]' => ['value' => 'gpt-5.2'],
+        ],
+      ],
+    ];
+    
     
     $form['#attached']['html_head'][] = [
       [
@@ -78,15 +136,30 @@ class SettingsForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {  
     $api_key = $form_state->getValue('api_key');
     $website_id = $form_state->getValue('website_id');
+    $openai_api_key = $form_state->getValue('openai_api_key');
+    $openai_model = $form_state->getValue('openai_model');
+    $openai_base_url = $form_state->getValue('openai_base_url');
+    $reasoning_effort = $form_state->getValue('reasoning_effort');
+    
     try {
-      $this->config('dqm_drupal_module.settings')
-        ->set('api_key', $api_key)
+      $config = $this->config('dqm_drupal_module.settings');
+      $config->set('api_key', $api_key)
         ->set('website_id', $website_id)
-        ->save();
+        ->set('openai_model', $openai_model)
+        ->set('openai_base_url', $openai_base_url)
+        ->set('reasoning_effort', $reasoning_effort);
+      
+      // Only update OpenAI API key if a new value was provided
+      if (!empty($openai_api_key)) {
+        $config->set('openai_api_key', $openai_api_key);
+      }
+      
+      $config->save();
     } catch (\Exception $e) {
       \Drupal::messenger()->addError($this->t('Failed to save settings: @message', ['@message' => $e->getMessage()]));
       return;
     }
     parent::submitForm($form, $form_state);
   }
+
 }
