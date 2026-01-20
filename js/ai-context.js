@@ -1,21 +1,9 @@
-/**
- * AI Context Manager - Centralized configuration and settings for AI features
- * Mirrors the React component's AIContext.tsx architecture
- * 
- * Manages:
- * - Translation settings (enabled, mode)
- * - Summary settings
- * - OpenAI credentials
- * - localStorage synchronization
- * - Configuration from props/WordPress options
- */
+
 
 (function(window) {
     'use strict';
 
-    /**
-     * Storage keys for AI settings (matching React component)
-     */
+    
     const AI_STORAGE_KEYS = {
         translationEnabled: 'dqm_translate_results_enabled',
         translationMode: 'dqm_translation_mode',
@@ -29,9 +17,7 @@
         computeBudgetMs: 'dqm_compute_budget_ms'
     };
 
-    /**
-     * AI Configuration (matching React component's structure)
-     */
+    
     const AI_CONFIG = {
         translation: {
             enabledByDefault: false,
@@ -56,26 +42,29 @@
         }
     };
 
-    /**
-     * AI Context Manager Class
-     * Equivalent to React's AIProvider + useAI hook
-     */
+    
     class AIContextManager {
         constructor(config = {}) {
             this.config = {
                 translation: { ...AI_CONFIG.translation, ...config.translation },
                 summary: { ...AI_CONFIG.summary, ...config.summary }
             };
+            
+            this._initialConfig = {
+                openAiApiKey: config.openAiApiKey || '',
+                openAiModel: config.openAiModel || '',
+                openAiBaseUrl: config.openAiBaseUrl || '',
+                reasoningEffort: config.reasoningEffort || ''
+            };
 
             this._listeners = new Set();
             this._state = this._initializeState();
             this._setupStorageSync();
+            
+            this._applyInitialConfig();
         }
 
-        /**
-         * Initialize state from localStorage and config
-         * Mirrors React component's useState initialization
-         */
+        
         _initializeState() {
             return {
                 translationEnabled: this._getInitialBooleanState(
@@ -145,10 +134,7 @@
             return 'low';
         }
 
-        /**
-         * Setup automatic localStorage synchronization
-         * Mirrors React component's useEffect hooks
-         */
+        
         _setupStorageSync() {
             this._storageWatchers = {
                 translationEnabled: (value) => this._setStorageItem(
@@ -182,9 +168,7 @@
             };
         }
 
-        /**
-         * Update state and sync to localStorage
-         */
+        
         _setState(updates) {
             const oldState = { ...this._state };
             this._state = { ...this._state, ...updates };
@@ -199,9 +183,7 @@
             this._notifyListeners(oldState, this._state);
         }
 
-        /**
-         * Recalculate derived values (like useMemo in React)
-         */
+        
         _recalculateDerivedValues() {
             const currentLanguage = (window.DQM_i18n && window.DQM_i18n.getCurrentLocale) 
                 ? window.DQM_i18n.getCurrentLocale() 
@@ -224,17 +206,13 @@
                 (this._state.summaryState === 'generating' || this._state.summaryState === 'idle');
         }
 
-        /**
-         * Subscribe to state changes
-         */
+        
         subscribe(listener) {
             this._listeners.add(listener);
             return () => this._listeners.delete(listener);
         }
 
-        /**
-         * Notify all listeners of state changes
-         */
+        
         _notifyListeners(oldState, newState) {
             this._listeners.forEach(listener => {
                 try {
@@ -308,8 +286,9 @@
 
         isTranslationReady() {
             const state = this.getState();
-            return state.translationEnabled && 
-                   state.openAiApiKey && 
+            
+            
+            return state.openAiApiKey && 
                    state.openAiApiKey.length > 10;
         }
 
@@ -327,6 +306,43 @@
         shouldWaitForSummary() {
             const state = this.getState();
             return state.summaryGenerating;
+        }
+        
+        
+        _applyInitialConfig() {
+            const updates = {};
+            
+            
+            if (this._initialConfig.openAiApiKey && !this._getStorageItem(AI_STORAGE_KEYS.openaiApiKey)) {
+                updates.openAiApiKey = this._initialConfig.openAiApiKey;
+                this._setStorageItem(AI_STORAGE_KEYS.openaiApiKey, this._initialConfig.openAiApiKey);
+            } else if (this._initialConfig.openAiApiKey) {
+                
+                updates.openAiApiKey = this._initialConfig.openAiApiKey;
+                this._setStorageItem(AI_STORAGE_KEYS.openaiApiKey, this._initialConfig.openAiApiKey);
+            }
+            
+            if (this._initialConfig.openAiModel && !this._getStorageItem(AI_STORAGE_KEYS.openaiModel)) {
+                updates.openAiModel = this._initialConfig.openAiModel;
+                this._setStorageItem(AI_STORAGE_KEYS.openaiModel, this._initialConfig.openAiModel);
+            }
+            
+            if (this._initialConfig.openAiBaseUrl && !this._getStorageItem(AI_STORAGE_KEYS.openaiBaseUrl)) {
+                updates.openAiBaseUrl = this._initialConfig.openAiBaseUrl;
+                this._setStorageItem(AI_STORAGE_KEYS.openaiBaseUrl, this._initialConfig.openAiBaseUrl);
+            }
+            
+            if (this._initialConfig.reasoningEffort && !this._getStorageItem(AI_STORAGE_KEYS.reasoningEffort)) {
+                const validEffort = this._getValidReasoningEffort(this._initialConfig.reasoningEffort);
+                updates.reasoningEffort = validEffort;
+                this._setStorageItem(AI_STORAGE_KEYS.reasoningEffort, validEffort);
+            }
+            
+            
+            if (Object.keys(updates).length > 0) {
+                this._state = { ...this._state, ...updates };
+                this._recalculateDerivedValues();
+            }
         }
     }
 

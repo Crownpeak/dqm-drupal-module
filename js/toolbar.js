@@ -269,6 +269,13 @@
     return key;
   }
 
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+
   function updateUITranslations() {
     console.log('[DQM] Updating UI translations for locale:', currentLocale);
     
@@ -449,7 +456,324 @@
           
           actionsContainer.appendChild(languageSwitcher);
           console.log('[DQM] Language switcher added to header actions');
+          
+          const aiButton = document.createElement('button');
+          aiButton.className = 'dqm-ai-assistant-button';
+          aiButton.type = 'button';
+          aiButton.setAttribute('aria-label', 'AI Assistant');
+          aiButton.innerHTML = `
+            <svg class="dqm-ai-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+              <path d="m19 9 1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25z"></path>
+            </svg>
+          `;
+          
+          aiButton.addEventListener('click', function() {
+            showAIAssistantModal();
+          });
+          
+          actionsContainer.appendChild(aiButton);
         });
+        
+        function showAIAssistantModal() {
+          const existingModal = document.querySelector('.dqm-ai-settings-dialog');
+          if (existingModal) {
+            existingModal.remove();
+          }
+          
+          const settings = drupalSettings.dqmDrupalModule || {};
+          const hasOpenAIKey = settings.openai_api_key && settings.openai_api_key.length > 10;
+          const accordionExpanded = !hasOpenAIKey;
+          
+          const translationEnabled = localStorage.getItem('dqm_translation_enabled') === 'true';
+          const translationMode = localStorage.getItem('dqm_translation_mode') || 'fast';
+          const summaryEnabled = localStorage.getItem('dqm_summary_enabled') === 'true';
+          
+          const dialogHTML = `
+            <div class="dqm-ai-settings-dialog" id="dqm-ai-settings-dialog">
+              <div class="dqm-ai-settings-overlay"></div>
+              <div class="dqm-ai-settings-content">
+                <div class="dqm-ai-settings-header">
+                  <div class="dqm-ai-settings-title">
+                    <svg class="dqm-ai-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="m19 9 1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25z"/>
+                    </svg>
+                    <h2>${t('AI Assistant')}</h2>
+                  </div>
+                  <button class="dqm-dialog-close" id="dqm-ai-settings-close">×</button>
+                </div>
+                <div class="dqm-ai-settings-body">
+                  <div class="dqm-toggle-section">
+                    <div class="dqm-toggle-item">
+                      <div class="dqm-toggle-info">
+                        <strong>${t('Auto-translate DQM results')}</strong>
+                        <p class="dqm-toggle-description">${t('When enabled, checkpoint names and descriptions are translated based on your DQM language setting.')}</p>
+                      </div>
+                      <label class="dqm-switch">
+                        <input type="checkbox" id="dqm-translation-toggle" ${translationEnabled ? 'checked' : ''} ${!hasOpenAIKey ? 'disabled' : ''}>
+                        <span class="dqm-switch-slider"></span>
+                      </label>
+                    </div>
+                    
+                    <div class="dqm-toggle-item">
+                      <div class="dqm-toggle-info">
+                        <strong>${t('Full translation power')}</strong>
+                        <p class="dqm-toggle-description">${t('translation_full_power')}</p>
+                      </div>
+                      <label class="dqm-switch">
+                        <input type="checkbox" id="dqm-translation-mode-toggle" ${translationMode === 'full' ? 'checked' : ''} ${!hasOpenAIKey || !translationEnabled ? 'disabled' : ''}>
+                        <span class="dqm-switch-slider"></span>
+                      </label>
+                    </div>
+                    
+                    <div class="dqm-toggle-item">
+                      <div class="dqm-toggle-info">
+                        <strong>${t('AI summary card')}</strong>
+                        <p class="dqm-toggle-description">${t('summary_enable')}</p>
+                      </div>
+                      <label class="dqm-switch">
+                        <input type="checkbox" id="dqm-summary-toggle" ${summaryEnabled ? 'checked' : ''} ${!hasOpenAIKey ? 'disabled' : ''}>
+                        <span class="dqm-switch-slider"></span>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div class="dqm-accordion" id="dqm-ai-accordion">
+                    <div class="dqm-accordion-header ${accordionExpanded ? 'expanded' : ''}" id="dqm-accordion-header">
+                      <div class="dqm-accordion-title">
+                        <span>${t('ChatGPT (API)')}</span>
+                        <div class="dqm-accordion-chips">
+                          <span class="dqm-chip">${t('API')}</span>
+                          <span class="dqm-chip">${t('Summary')}</span>
+                        </div>
+                      </div>
+                      <svg class="dqm-accordion-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/>
+                      </svg>
+                    </div>
+                    <div class="dqm-accordion-content ${accordionExpanded ? 'expanded' : ''}" id="dqm-accordion-content">
+                      <div class="dqm-ai-info-box">
+                        <p>${t('AI may hallucinate or provide inaccurate information. Review results carefully.')}</p>
+                      </div>
+                      
+                      <div class="dqm-field-group">
+                        <label>${t('Model')}</label>
+                        <div class="dqm-readonly-field">${settings.openai_model || 'gpt-4o-mini'}</div>
+                      </div>
+                      
+                      <div class="dqm-field-group">
+                        <label>${t('Base URL')}</label>
+                        <div class="dqm-readonly-field">${settings.openai_base_url || 'https://api.openai.com/v1'}</div>
+                      </div>
+                      
+                      <div class="dqm-field-group">
+                        <label>${t('API Key Status')}</label>
+                        <div class="dqm-readonly-field">
+                          <span class="dqm-status-badge ${hasOpenAIKey ? 'configured' : 'not-configured'}">
+                            ${hasOpenAIKey ? t('Configured') : t('Not configured')}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      ${translationEnabled && hasOpenAIKey ? `
+                        <div class="dqm-status-section">
+                          <div class="dqm-alert dqm-alert-success">
+                            <span>${t('Translation is enabled and working')}</span>
+                          </div>
+                        </div>
+                      ` : ''}
+
+                      ${!hasOpenAIKey ? `
+                        <div class="dqm-warning-box">
+                          <p>${t('To change AI settings, visit')} <a href="/admin/config/system/dqm-drupal-module-settings" target="_blank">${t('Plugin Settings')}</a></p>
+                        </div>
+                      ` : ''}
+                    </div>
+                  </div>
+
+                  <div class="dqm-ai-warning-box">
+                    <p>${t('AI may hallucinate or provide inaccurate information. Review results carefully.')}</p>
+                  </div>
+
+                  <div id="dqm-translation-progress-container" style="display: none;">
+                    <div class="dqm-translation-progress">
+                      <div class="dqm-translation-status">
+                        <strong id="dqm-translation-status-text">${t('Translating...')}</strong>
+                      </div>
+                      <div class="dqm-progress-bar">
+                        <div class="dqm-progress-fill" id="dqm-translation-progress-fill" style="width: 0%"></div>
+                      </div>
+                      <div class="dqm-progress-text" id="dqm-translation-progress-text">0 / 0 ${t('checkpoints translated')}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="dqm-ai-settings-footer">
+                  <button class="dqm-action-btn dqm-action-btn-secondary" id="dqm-ai-clear-cache-btn">
+                    ${t('Clear AI cache')}
+                  </button>
+                  <button class="dqm-action-btn dqm-action-btn-secondary" id="dqm-ai-translate-btn" ${!translationEnabled || !hasOpenAIKey ? 'disabled' : ''}>
+                    ${t('Translate missing items')}
+                  </button>
+                  <button class="dqm-action-btn dqm-action-btn-secondary" id="dqm-ai-restart-summary-btn" ${!summaryEnabled || !hasOpenAIKey ? 'disabled' : ''}>
+                    ${t('Restart summary')}
+                  </button>
+                  <button class="dqm-action-btn dqm-action-btn-primary" id="dqm-ai-close-btn">
+                    ${t('Close')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+          
+          document.body.insertAdjacentHTML('beforeend', dialogHTML);
+          
+          const dialog = document.getElementById('dqm-ai-settings-dialog');
+          setTimeout(() => dialog.classList.add('active'), 10);
+          
+          const closeDialog = () => {
+            dialog.classList.remove('active');
+            setTimeout(() => dialog.remove(), 300);
+          };
+          
+          document.getElementById('dqm-ai-settings-close').addEventListener('click', closeDialog);
+          dialog.querySelector('.dqm-ai-settings-overlay').addEventListener('click', closeDialog);
+          
+          const accordionHeader = document.getElementById('dqm-accordion-header');
+          const accordionContent = document.getElementById('dqm-accordion-content');
+          accordionHeader.addEventListener('click', () => {
+            accordionHeader.classList.toggle('expanded');
+            accordionContent.classList.toggle('expanded');
+          });
+          
+          const translationToggle = document.getElementById('dqm-translation-toggle');
+          const translationModeToggle = document.getElementById('dqm-translation-mode-toggle');
+          const summaryToggle = document.getElementById('dqm-summary-toggle');
+          
+          if (translationToggle) {
+            translationToggle.addEventListener('change', (e) => {
+              localStorage.setItem('dqm_translation_enabled', e.target.checked);
+              const modeToggle = document.getElementById('dqm-translation-mode-toggle');
+              if (modeToggle) modeToggle.disabled = !e.target.checked;
+            });
+          }
+          
+          if (translationModeToggle) {
+            translationModeToggle.addEventListener('change', (e) => {
+              localStorage.setItem('dqm_translation_mode', e.target.checked ? 'full' : 'fast');
+            });
+          }
+          
+          if (summaryToggle) {
+            summaryToggle.addEventListener('change', (e) => {
+              localStorage.setItem('dqm_summary_enabled', e.target.checked);
+            });
+          }
+
+          const closeBtnFooter = document.getElementById('dqm-ai-close-btn');
+          if (closeBtnFooter) {
+            closeBtnFooter.addEventListener('click', closeDialog);
+          }
+
+          const clearCacheBtn = document.getElementById('dqm-ai-clear-cache-btn');
+          if (clearCacheBtn) {
+            clearCacheBtn.addEventListener('click', () => {
+              if (aiTranslationManager) {
+                aiTranslationManager.clearCache();
+              }
+              
+              clearCacheBtn.textContent = t('Cache cleared');
+              clearCacheBtn.disabled = true;
+              setTimeout(() => {
+                clearCacheBtn.textContent = t('Clear AI cache');
+                clearCacheBtn.disabled = false;
+              }, 2000);
+            });
+          }
+
+          const translateBtn = document.getElementById('dqm-ai-translate-btn');
+          if (translateBtn && aiTranslationManager) {
+            translateBtn.addEventListener('click', async () => {
+              translateBtn.disabled = true;
+              const originalText = translateBtn.textContent;
+              translateBtn.textContent = t('Translating...');
+              
+              const progressContainer = document.getElementById('dqm-translation-progress-container');
+              const progressFill = document.getElementById('dqm-translation-progress-fill');
+              const progressText = document.getElementById('dqm-translation-progress-text');
+              const statusText = document.getElementById('dqm-translation-status-text');
+
+              if (progressContainer) progressContainer.style.display = 'block';
+              
+              if (!translationEnabled) {
+                localStorage.setItem('dqm_translation_enabled', 'true');
+                if (translationToggle) translationToggle.checked = true;
+                if (translationModeToggle) translationModeToggle.disabled = false;
+              }
+
+              try {
+                const resultsContainer = document.getElementById('dqm-results-container');
+                if (resultsContainer && window.dqmFailedCheckpoints && window.dqmFailedCheckpoints.length > 0) {
+                  const translatedCheckpoints = await aiTranslationManager.translateCheckpoints(
+                    window.dqmFailedCheckpoints,
+                    currentLocale,
+                    (progress) => {
+                      if (progressFill && progressText) {
+                        const percent = Math.round((progress.translatedCheckpoints / progress.totalCheckpoints) * 100);
+                        progressFill.style.width = `${percent}%`;
+                        progressText.textContent = `${progress.translatedCheckpoints} / ${progress.totalCheckpoints} ${t('checkpoints translated')}`;
+                      }
+                    },
+                    true
+                  );
+                  
+                  window.dqmFailedCheckpoints = translatedCheckpoints;
+                  
+                  translateBtn.textContent = t('Translation complete');
+                  if (statusText) statusText.textContent = t('Translation complete');
+                  
+                  location.reload();
+                }
+              } catch (error) {
+                console.error('Manual translation failed:', error);
+                translateBtn.textContent = t('Translation failed');
+              } finally {
+                setTimeout(() => {
+                  if (translateBtn) {
+                    translateBtn.disabled = false;
+                    translateBtn.textContent = originalText;
+                  }
+                  if (progressContainer) progressContainer.style.display = 'none';
+                }, 2000);
+              }
+            });
+          }
+
+          const restartSummaryBtn = document.getElementById('dqm-ai-restart-summary-btn');
+          if (restartSummaryBtn && !restartSummaryBtn.disabled) {
+            restartSummaryBtn.addEventListener('click', () => {
+              restartSummaryBtn.textContent = t('Restarted');
+              restartSummaryBtn.disabled = true;
+              setTimeout(() => {
+                restartSummaryBtn.textContent = t('Restart summary');
+                restartSummaryBtn.disabled = false;
+                closeDialog();
+              }, 1000);
+            });
+          }
+
+          dialog.addEventListener('click', (e) => {
+            if (e.target === dialog) {
+              closeDialog();
+            }
+          });
+
+          document.addEventListener('keydown', function escapeHandler(e) {
+            if (e.key === 'Escape') {
+              closeDialog();
+              document.removeEventListener('keydown', escapeHandler);
+            }
+          });
+        }
       } catch (e) {
         alert('Error initializing DQM toolbar: ' + e.message);
       }
@@ -688,7 +1012,7 @@
             (progress) => {
               console.log('[DQM] 📊 Title translation progress:', progress);
             },
-            true // titles only
+            true 
           );
           
           console.log('[DQM] ✅ Checkpoint titles translated');
@@ -700,7 +1024,7 @@
             (progress) => {
               console.log('[DQM] 📊 Full content translation progress:', progress);
             },
-            false // full translation
+            false 
           );
           
           console.log('[DQM] ✅ Full checkpoint content translation complete');
@@ -1181,6 +1505,13 @@
     }, 0);
 
     container.innerHTML = html;
+
+    
+    const assetKey = 'dqm_asset_id_' + btoa(window.location.href);
+    const assetId = localStorage.getItem(assetKey);
+    if (assetId && data.checkpoints) {
+      generateAISummary(assetId, data.checkpoints);
+    }
 
     const pieChart = container.querySelector('.dqm-pie-chart');
     if (pieChart) {
@@ -1975,6 +2306,159 @@
     }
   }
 
+  function generateAISummary(assetId, checkpoints) {
+    const container = document.getElementById('dqm-ai-summary-container');
+    if (!container) {
+      console.warn('[DQM] AI summary container not found');
+      return;
+    }
+
+    const settings = drupalSettings.dqmDrupalModule || {};
+    const summaryEnabled = localStorage.getItem('dqm_summary_enabled') === 'true';
+    const hasOpenAIKey = settings.openai_api_key && settings.openai_api_key.length > 10;
+
+    if (!summaryEnabled || !hasOpenAIKey) {
+      container.style.display = 'none';
+      return;
+    }
+
+    container.style.display = 'block';
+    container.innerHTML = `
+      <div class="dqm-card dqm-ai-summary-card">
+        <div class="dqm-ai-summary-header">
+          <div class="dqm-ai-header-left">
+            <svg class="dqm-ai-sparkle-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="m19 9 1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25z"/>
+            </svg>
+            <h3>${t('AI Summary')}</h3>
+            <span class="dqm-ai-badge">${t('ChatGPT')}</span>
+          </div>
+        </div>
+        <div class="dqm-ai-loading">
+          <div class="dqm-spinner"></div>
+          <p>${t('Generating summary...')}</p>
+        </div>
+      </div>
+    `;
+
+    const currentLang = localStorage.getItem('dqm_target_lang') || 'en';
+
+    fetch(Drupal.url('dqm-drupal-module/ai-summary'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        assetId: assetId,
+        checkpoints: JSON.stringify(checkpoints),
+        targetLang: currentLang
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success && data.bullets && Array.isArray(data.bullets)) {
+        const bulletHTML = data.bullets.map(bullet => `<li>${escapeHtml(bullet)}</li>`).join('');
+        
+        container.innerHTML = `
+          <div class="dqm-card dqm-ai-summary-card">
+            <div class="dqm-ai-summary-header">
+              <div class="dqm-ai-header-left">
+                <svg class="dqm-ai-sparkle-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="m19 9 1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25z"/>
+                </svg>
+                <h3>${t('AI Summary')}</h3>
+                <span class="dqm-ai-badge">${t('ChatGPT')}</span>
+              </div>
+              <div class="dqm-ai-header-right">
+                <button class="dqm-ai-icon-btn" id="dqm-ai-settings-btn" title="${t('AI Settings')}">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+                  </svg>
+                </button>
+                <button class="dqm-ai-icon-btn" id="dqm-ai-regenerate-header-btn" title="${t('Regenerate')}">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <ul class="dqm-ai-bullets">${bulletHTML}</ul>
+            <div class="dqm-ai-footer">
+              <div class="dqm-ai-footer-left">
+                <span class="dqm-ai-model">${data.stats.model || 'gpt-4o-mini'}</span>
+                <span class="dqm-ai-stats">${data.stats.failedCheckpoints}/${data.stats.totalCheckpoints} ${t('failed')}</span>
+              </div>
+              <button class="dqm-ai-regenerate-btn" id="dqm-ai-regenerate-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                </svg>
+                ${t('Regenerate')}
+              </button>
+            </div>
+          </div>
+        `;
+        
+        
+        const settingsBtn = document.getElementById('dqm-ai-settings-btn');
+        if (settingsBtn) {
+          settingsBtn.addEventListener('click', () => {
+            const aiAssistantBtn = document.querySelector('.dqm-ai-assistant-button');
+            if (aiAssistantBtn) {
+              aiAssistantBtn.click();
+            }
+          });
+        }
+        
+        const regenerateHandler = () => {
+          console.log('[DQM] Regenerating AI summary');
+          
+          container.innerHTML = `
+            <div class="dqm-card dqm-ai-summary-card">
+              <div class="dqm-ai-summary-header">
+                <div class="dqm-ai-header-left">
+                  <svg class="dqm-ai-sparkle-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="m19 9 1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25z"/>
+                  </svg>
+                  <h3>${t('AI Summary')}</h3>
+                  <span class="dqm-ai-badge">${t('ChatGPT')}</span>
+                </div>
+              </div>
+              <div class="dqm-ai-loading">
+                <div class="dqm-spinner"></div>
+                <p>${t('Regenerating summary...')}</p>
+              </div>
+            </div>
+          `;
+          
+          generateAISummary(assetId, checkpoints);
+        };
+
+        const regenerateHeaderBtn = document.getElementById('dqm-ai-regenerate-header-btn');
+        if (regenerateHeaderBtn) {
+          regenerateHeaderBtn.addEventListener('click', regenerateHandler);
+        }
+
+        const regenerateFooterBtn = document.getElementById('dqm-ai-regenerate-btn');
+        if (regenerateFooterBtn) {
+          regenerateFooterBtn.addEventListener('click', regenerateHandler);
+        }
+      } else {
+        container.innerHTML = `
+          <div class="dqm-card dqm-ai-summary-card dqm-error">
+            <p>${t('Error')}: ${data.message || t('Failed to generate summary')}</p>
+          </div>
+        `;
+      }
+    })
+    .catch(error => {
+      console.error('[DQM] AI summary generation failed:', error);
+      container.innerHTML = `
+        <div class="dqm-card dqm-ai-summary-card dqm-error">
+          <p>${t('Error')}: ${t('Failed to generate summary')}</p>
+        </div>
+      `;
+    });
+  }
 
   window.dqmFailedCheckpoints = [];
 

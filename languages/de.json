@@ -182,6 +182,10 @@
   "Restart translation process for all checkpoints": "Übersetzungsprozess für alle Prüfpunkte neu starten",
   "Regenerate AI summary for current results": "KI-Zusammenfassung für aktuelle Ergebnisse neu generieren",
   
+  "AI Assistant Settings": "KI-Assistent Einstellungen",
+  "AI Assistant features coming soon!": "KI-Assistent-Funktionen kommen bald!",
+  "Configure OpenAI API settings in the module configuration page.": "Konfigurieren Sie OpenAI-API-Einstellungen auf der Modulkonfigurationsseite.",
+  
   "dqm_disabled": "DQM ist deaktiviert. Zugriff verweigert.",
   "dqm_not_configured": "DQM ist nicht konfiguriert. Bitte geben Sie API-Zugangsdaten über Props, localStorage oder ein Authentifizierungs-Backend an."
 }

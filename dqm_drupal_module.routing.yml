@@ -77,3 +77,11 @@ dqm_drupal_module.clear_translation_cache:
   methods: [POST]
   requirements:
     _permission: 'access content'
+
+dqm_drupal_module.ai_summary:
+  path: '/dqm-drupal-module/ai-summary'
+  defaults:
+    _controller: '\Drupal\dqm_drupal_module\Controller\AISummaryController::generateSummary'
+  methods: [POST]
+  requirements:
+    _permission: 'access content'

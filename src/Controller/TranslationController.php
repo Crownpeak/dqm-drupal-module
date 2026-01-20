@@ -10,58 +10,29 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\RequestException;
 
-/**
- * Controller for handling translation requests.
- */
-class TranslationController extends ControllerBase {
+class TranslationController extends ControllerBase
+{
 
-  /**
-   * The HTTP client.
-   *
-   * @var \GuzzleHttp\ClientInterface
-   */
   protected $httpClient;
 
-  /**
-   * The config factory.
-   *
-   * @var \Drupal\Core\Config\ConfigFactoryInterface
-   */
   protected $configFactory;
 
-  /**
-   * Constructs a TranslationController object.
-   *
-   * @param \GuzzleHttp\ClientInterface $http_client
-   *   The HTTP client.
-   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
-   *   The config factory.
-   */
-  public function __construct(ClientInterface $http_client, ConfigFactoryInterface $config_factory) {
+  public function __construct(ClientInterface $http_client, ConfigFactoryInterface $config_factory)
+  {
     $this->httpClient = $http_client;
     $this->configFactory = $config_factory;
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
+  public static function create(ContainerInterface $container)
+  {
     return new static(
       $container->get('http_client'),
       $container->get('config.factory')
     );
   }
 
-  /**
-   * Translates checkpoints using OpenAI API.
-   *
-   * @param \Symfony\Component\HttpFoundation\Request $request
-   *   The request object.
-   *
-   * @return \Symfony\Component\HttpFoundation\JsonResponse
-   *   JSON response with translated checkpoints.
-   */
-  public function translateCheckpoints(Request $request) {
+  public function translateCheckpoints(Request $request)
+  {
     $config = $this->configFactory->get('dqm_drupal_module.settings');
     $openai_api_key = $config->get('openai_api_key');
     $openai_model = $config->get('openai_model') ?: 'gpt-4o-mini';
@@ -134,8 +105,7 @@ class TranslationController extends ControllerBase {
         $language_name,
         $target_lang
       );
-    }
-    else {
+    } else {
       $system_prompt = sprintf(
         'You are a fast translator. Quickly translate all text fields (name, description, category, topics) to %s (%s). Keep it concise. CRITICAL: ALL fields must be in the target language. Return JSON only.',
         $language_name,
@@ -167,8 +137,7 @@ class TranslationController extends ControllerBase {
         json_encode($checkpoint_data, JSON_PRETTY_PRINT),
         $language_name
       );
-    }
-    else {
+    } else {
       $user_prompt = sprintf(
         "Translate these checkpoints to %s:\n%s\n\nReturn JSON array with same structure but with ALL text fields ('name', 'description', 'category', 'topics') fully translated to %s. Preserve the 'id' and 'failed' fields unchanged. Each checkpoint must have translated name, description, category, and topics array.",
         $language_name,
@@ -243,14 +212,11 @@ class TranslationController extends ControllerBase {
 
       $translation_text = trim($data['choices'][0]['message']['content']);
 
-      // Extract JSON from markdown code blocks if present.
       if (preg_match('/```json\s*(.+?)\s*```/s', $translation_text, $matches)) {
         $translation_text = $matches[1];
-      }
-      elseif (preg_match('/```\s*(.+?)\s*```/s', $translation_text, $matches)) {
+      } elseif (preg_match('/```\s*(.+?)\s*```/s', $translation_text, $matches)) {
         $translation_text = $matches[1];
-      }
-      else {
+      } else {
         if (preg_match('/\[.+\]/s', $translation_text, $matches)) {
           $translation_text = $matches[0];
         }
@@ -288,8 +254,7 @@ class TranslationController extends ControllerBase {
         'nextBatchStart' => $is_complete ? NULL : $new_batch_start,
       ]);
 
-    }
-    catch (RequestException $e) {
+    } catch (RequestException $e) {
       return new JsonResponse([
         'success' => FALSE,
         'message' => 'Translation request failed: ' . $e->getMessage(),
@@ -303,15 +268,8 @@ class TranslationController extends ControllerBase {
     }
   }
 
-  /**
-   * Clears the translation cache.
-   *
-   * @return \Symfony\Component\HttpFoundation\JsonResponse
-   *   JSON response indicating success.
-   */
-  public function clearTranslationCache() {
-    // Note: Cache is primarily client-side (localStorage).
-    // This endpoint exists for API compatibility.
+  public function clearTranslationCache()
+  {
     return new JsonResponse([
       'success' => TRUE,
       'message' => 'Translation cache cleared successfully.',

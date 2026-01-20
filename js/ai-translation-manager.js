@@ -126,7 +126,7 @@ class AITranslationManager {
 
     async translateCheckpoints(checkpoints, targetLang, onProgress, titlesOnly = false) {
         if (!this.isTranslationReady()) {
-            throw new Error('Translation is not enabled or configured');
+            throw new Error('OpenAI API key is not configured');
         }
 
         if (!this.isTranslationNeeded(targetLang)) {

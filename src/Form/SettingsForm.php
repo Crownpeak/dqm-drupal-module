@@ -40,7 +40,6 @@ class SettingsForm extends ConfigFormBase {
       '#placeholder' => $this->t('Enter your Website ID'),
     ];
 
-    // AI Assistant Configuration section.
     $form['ai_section'] = [
       '#type' => 'details',
       '#title' => $this->t('AI Assistant Configuration'),
@@ -49,10 +48,11 @@ class SettingsForm extends ConfigFormBase {
     ];
 
     $form['ai_section']['openai_api_key'] = [
-      '#type' => 'password',
+      '#type' => 'textfield',
       '#title' => $this->t('OpenAI API Key'),
       '#description' => $this->t('Your OpenAI API key is required for AI features. Get one at https://platform.openai.com/api-keys. Leave blank to keep existing key.'),
       '#placeholder' => $config->get('openai_api_key') ? '••••••••••••••••' : $this->t('Enter your OpenAI API key (sk-...)'),
+      '#maxlength' => 512,
       '#attributes' => [
         'autocomplete' => 'off',
       ],
@@ -149,7 +149,6 @@ class SettingsForm extends ConfigFormBase {
         ->set('openai_base_url', $openai_base_url)
         ->set('reasoning_effort', $reasoning_effort);
       
-      // Only update OpenAI API key if a new value was provided
       if (!empty($openai_api_key)) {
         $config->set('openai_api_key', $openai_api_key);
       }
