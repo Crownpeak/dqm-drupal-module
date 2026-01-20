@@ -1,47 +1,34 @@
 (function ($, Drupal, once) {
   "use strict";
-
   const SUPPORTED_LOCALES = ['en', 'de', 'es'];
   const STORAGE_KEY_LOCALE = 'dqm_drupal_module_locale';
-  
   let currentLocale = 'en';
   let localeSource = 'default';
   let userOverride = false;
   let aiTranslationManager = null;
   let aiContext = null;
-
   if (typeof window.AIContextManager !== 'undefined') {
     try {
       const settings = Drupal.settings?.dqmDrupalModule || drupalSettings?.dqmDrupalModule || {};
-      console.log('[DQM] Initializing AI features with settings:', settings);
-      
       aiContext = new window.AIContextManager({
         openAiApiKey: settings.openai_api_key || '',
         openAiModel: settings.openai_model || 'gpt-4o-mini',
         openAiBaseUrl: settings.openai_base_url || 'https://api.openai.com/v1',
         reasoningEffort: settings.reasoning_effort || 'medium'
       });
-      console.log('[DQM] AIContextManager initialized');
-
       if (typeof window.AITranslationManager !== 'undefined') {
         aiTranslationManager = new window.AITranslationManager(aiContext);
-        console.log('[DQM] AITranslationManager initialized');
       } else {
-        console.warn('[DQM] AITranslationManager class not found');
       }
     } catch (error) {
-      console.error('[DQM] Failed to initialize AI features:', error);
     }
   } else {
-    console.warn('[DQM] AIContextManager class not found - translation features will not be available');
   }
-
   function normalizeLocale(locale) {
     if (!locale) return null;
     const normalized = locale.toLowerCase().split('-')[0];
     return SUPPORTED_LOCALES.includes(normalized) ? normalized : null;
   }
-
   function persistLocale(locale) {
     if (locale) {
       localStorage.setItem(STORAGE_KEY_LOCALE, locale);
@@ -49,7 +36,6 @@
       localStorage.removeItem(STORAGE_KEY_LOCALE);
     }
   }
-
   function resolveLocale() {
     const stored = localStorage.getItem(STORAGE_KEY_LOCALE);
     if (stored) {
@@ -60,74 +46,52 @@
         return normalized;
       }
     }
-
     const browserLang = navigator.language || navigator.userLanguage;
     const normalized = normalizeLocale(browserLang);
     if (normalized) {
       localeSource = 'browser';
       return normalized;
     }
-
     localeSource = 'default';
     return 'en';
   }
-
   function changeLanguage(newLocale) {
     const normalized = normalizeLocale(newLocale);
-    console.log('[DQM] changeLanguage called with:', newLocale, 'normalized to:', normalized);
-    
     if (!normalized) {
-      console.warn('[DQM] Invalid locale:', newLocale);
       return false;
     }
-    
     if (normalized === currentLocale) {
-      console.log('[DQM] Language already set to:', currentLocale);
       return false;
     }
-    
     try {
       currentLocale = normalized;
       localeSource = 'user';
       userOverride = true;
       persistLocale(normalized);
-      
-      console.log('[DQM] Language changed successfully to:', normalized);
-      console.log('[DQM] Saved to localStorage:', localStorage.getItem(STORAGE_KEY_LOCALE));
-      
       if (aiContext) {
         aiContext.updateLanguage(normalized);
-        console.log('[DQM] Updated AI context language');
       }
-      
       if (typeof window.DQM_I18N !== 'undefined') {
         window.DQM_I18N.setCurrentLocale(normalized);
         window.DQM_I18N.loadLanguageFile(normalized).then(() => {
-          console.log('[DQM] Loaded translations for', normalized);
           updateUITranslations();
         });
       }
-      
       return true;
     } catch (error) {
       console.error('[DQM] Failed to change language:', error);
       return false;
     }
   }
-
   function resetLanguage() {
     persistLocale(null);
     const resolved = resolveLocale();
     currentLocale = resolved;
     return resolved;
   }
-
   function createLanguageSwitcher() {
-    console.log('[DQM] Creating language switcher, current locale:', currentLocale, 'source:', localeSource);
-    
     const container = document.createElement('div');
     container.className = 'dqm-language-switcher';
-
     const button = document.createElement('button');
     button.className = 'dqm-language-button';
     button.setAttribute('aria-label', 'Language');
@@ -138,174 +102,125 @@
     const menu = document.createElement('div');
     menu.className = 'dqm-language-menu';
     menu.style.display = 'none';
-    console.log('[DQM] Language menu created, initial display:', menu.style.display);
-
     const flagSvg = {
       en: '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="14"><rect width="22" height="14" fill="#fff"/><g stroke-width="0"><rect y="0" width="22" height="2" fill="#b22234"/><rect y="3" width="22" height="2" fill="#b22234"/><rect y="6" width="22" height="2" fill="#b22234"/><rect y="9" width="22" height="2" fill="#b22234"/><rect y="12" width="22" height="2" fill="#b22234"/><rect width="10" height="8" fill="#3c3b6e"/></g></svg>',
       de: '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="14"><rect width="22" height="14" fill="#ffce00"/><rect y="0" width="22" height="4.67" fill="#000"/><rect y="9.33" width="22" height="4.67" fill="#dd0000"/></svg>',
       es: '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="14"><rect width="22" height="14" fill="#c60b1e"/><rect y="4" width="22" height="6" fill="#ffc400"/></svg>'
     };
-
     const languageNames = {
       en: 'English',
       de: 'German',
       es: 'Spanish'
     };
-
     SUPPORTED_LOCALES.forEach(function(locale) {
       const menuItem = document.createElement('div');
       menuItem.className = 'dqm-language-menu-item';
       if (locale === currentLocale) {
         menuItem.classList.add('active');
       }
-
       const flagContainer = document.createElement('div');
       flagContainer.className = 'dqm-flag-container';
       flagContainer.innerHTML = flagSvg[locale];
-
       const labelContainer = document.createElement('div');
       labelContainer.className = 'dqm-language-label';
-
       const labelRow = document.createElement('div');
       labelRow.className = 'dqm-language-label-row';
-
       const languageName = document.createElement('div');
       languageName.className = 'dqm-language-name';
       languageName.textContent = t(languageNames[locale]);
-
       const code = document.createElement('span');
       code.className = 'dqm-language-code';
       code.textContent = locale.toUpperCase();
-
       labelRow.appendChild(languageName);
       labelRow.appendChild(code);
       labelContainer.appendChild(labelRow);
-
       if (locale === currentLocale && localeSource !== 'default') {
         const sourceLabel = document.createElement('div');
         sourceLabel.className = 'dqm-language-source';
         sourceLabel.textContent = localeSource === 'storage' ? t('Custom selected') : t('Browser default');
         labelContainer.appendChild(sourceLabel);
       }
-
       menuItem.appendChild(flagContainer);
       menuItem.appendChild(labelContainer);
-
       menuItem.addEventListener('click', function() {
-        console.log('[DQM] Language menu item clicked:', locale);
         if (locale !== currentLocale) {
-          console.log('[DQM] Changing language from', currentLocale, 'to', locale);
           if (changeLanguage(locale)) {
-            console.log('[DQM] Language changed successfully - UI will update automatically');
           }
         }
         menu.style.display = 'none';
       });
-
       menu.appendChild(menuItem);
     });
-    
-    console.log('[DQM] Added', SUPPORTED_LOCALES.length, 'language menu items');
-
     if (userOverride) {
-      console.log('[DQM] Adding reset option (userOverride=true)');
       const divider = document.createElement('div');
       divider.className = 'dqm-menu-divider';
       menu.appendChild(divider);
-
       const resetItem = document.createElement('div');
       resetItem.className = 'dqm-language-menu-item dqm-reset-item';
       resetItem.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg><span>' + t('Reset') + '</span>';
       resetItem.addEventListener('click', function() {
-        console.log('[DQM] Reset button clicked');
         resetLanguage();
         window.location.reload();
       });
       menu.appendChild(resetItem);
     }
-
     button.addEventListener('click', function(e) {
       e.stopPropagation();
       const isVisible = menu.style.display === 'block';
-      console.log('[DQM] Language button clicked, menu currently:', isVisible ? 'visible' : 'hidden');
       menu.style.display = isVisible ? 'none' : 'block';
-      console.log('[DQM] Menu display set to:', menu.style.display);
     });
-
     document.addEventListener('click', function(e) {
       if (!container.contains(e.target)) {
         if (menu.style.display === 'block') {
-          console.log('[DQM] Closing menu (clicked outside)');
           menu.style.display = 'none';
         }
       }
     });
-
     container.appendChild(button);
     container.appendChild(menu);
-
-    console.log('[DQM] Language switcher created successfully');
     return container;
   }
-
   currentLocale = resolveLocale();
-
   if (typeof window.DQM_I18N !== 'undefined') {
-    console.log('[DQM] Initializing i18n for locale:', currentLocale);
     window.DQM_I18N.initializeTranslations(currentLocale).then(() => {
-      console.log('[DQM] i18n initialized, updating UI translations');
       updateUITranslations();
     }).catch(error => {
-      console.error('[DQM] Failed to initialize i18n:', error);
     });
   } else {
-    console.warn('[DQM] DQM_I18N not available - UI translations will not work');
   }
-
   function t(key) {
     if (typeof window.DQM_I18N !== 'undefined') {
       return window.DQM_I18N.getTranslation(key);
     }
     return key;
   }
-
   function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
   }
-
-
   function updateUITranslations() {
-    console.log('[DQM] Updating UI translations for locale:', currentLocale);
-    
     const runCheckButton = document.querySelector('.dqm-drupal-module-run-quality-check');
     if (runCheckButton) {
       const translatedText = t('Run Quality Check');
       runCheckButton.value = translatedText;
-      console.log('[DQM] Updated button text to:', translatedText);
     }
-    
     const runCheckButtonSecondary = document.querySelector('.dqm-drupal-module-run-quality-check-secondary');
     if (runCheckButtonSecondary) {
       runCheckButtonSecondary.textContent = t('Run Quality Check');
     }
-    
     const sourceButton = document.querySelector('.dqm-drupal-module-source-button');
     if (sourceButton) {
       sourceButton.value = t('Source');
     }
-    
     const headerTitle = document.querySelector('.dqm-header-title');
     if (headerTitle) {
-      headerTitle.textContent = t('title') || 'Digital Quality and Accessibility';
+      headerTitle.textContent = t('title');
     }
-    
     const overviewTitle = document.querySelector('.dqm-overview-section h3');
     if (overviewTitle) {
       overviewTitle.innerHTML = `📊 ${t('Quality Overview')}`;
     }
-    
     const legendItems = document.querySelectorAll('.dqm-legend-item span');
     legendItems.forEach((item, index) => {
       const text = item.textContent.trim();
@@ -319,7 +234,6 @@
         }
       }
     });
-    
     document.querySelectorAll('.dqm-card h3').forEach(h3 => {
       const text = h3.textContent.trim();
       if (text.includes('Quality Breakdown') || text.includes('Qualitätsübersicht') || text.includes('Desglose de calidad')) {
@@ -331,7 +245,6 @@
         }
       }
     });
-    
     document.querySelectorAll('.dqm-topic-header span:last-child').forEach(span => {
       const text = span.textContent;
       const match = text.match(/(\d+)\/(\d+)\s+(.+)/i);
@@ -339,20 +252,16 @@
         span.textContent = `${match[1]}/${match[2]} ${t('passed')}`;
       }
     });
-    
     const filterLabel = document.querySelector('.dqm-topics-label');
     if (filterLabel) {
       filterLabel.textContent = t('Filter by Topic:');
     }
-    
     const allTopicsOption = document.querySelector('.dqm-topics-filter option[value=""]');
     if (allTopicsOption) {
       allTopicsOption.textContent = t('All Topics');
     }
-    
     document.querySelectorAll('.badge').forEach(badge => {
       const currentText = badge.textContent.trim();
-      
       const reverseMap = {
         'Barrierefreiheit': 'Accessibility',
         'Accesibilidad': 'Accessibility',
@@ -364,15 +273,12 @@
         'Benutzerfreundlichkeit': 'Usability',
         'Usabilidad': 'Usability'
       };
-      
       const englishKey = reverseMap[currentText] || currentText;
       badge.textContent = t(englishKey);
     });
-    
     document.querySelectorAll('.dqm-cannot-highlight').forEach(el => {
       el.textContent = t('Cannot highlight');
     });
-    
     document.querySelectorAll('.dqm-language-menu-item').forEach((menuItem, index) => {
       const locales = ['en', 'de', 'es'];
       const locale = locales[index];
@@ -382,13 +288,11 @@
         } else {
           menuItem.classList.remove('active');
         }
-        
         const languageNames = { en: 'English', de: 'German', es: 'Spanish' };
         const nameElement = menuItem.querySelector('.dqm-language-name, span');
         if (nameElement && !nameElement.classList.contains('dqm-language-code')) {
           nameElement.textContent = t(languageNames[locale]);
         }
-        
         const sourceLabel = menuItem.querySelector('.dqm-language-source');
         if (sourceLabel) {
           const text = sourceLabel.textContent.trim();
@@ -400,15 +304,11 @@
         }
       }
     });
-    
     const resetItem = document.querySelector('.dqm-reset-item span');
     if (resetItem) {
       resetItem.textContent = t('Reset');
     }
-    
-    console.log('[DQM] UI translations updated');
   }
-
   Drupal.behaviors.dqmDrupalModuleToolbar = {
     attach: function (context, settings) {
       try {
@@ -423,7 +323,6 @@
               alert(errorPrefix + e.message);
             }
           });
-
           $document.on('click', '.dqm-drupal-module-source-button', function () {
             try {
               showSourceModal(this);
@@ -431,7 +330,6 @@
               alert('Error showing source: ' + e.message);
             }
           });
-
           $document.on('click', '.dqm-drupal-module-page-highlight', function () {
             try {
               togglePageHighlight(this);
@@ -439,24 +337,17 @@
               alert('Error toggling page highlight: ' + e.message);
             }
           });
-
           $document.data('dqm-drupal-module-events-bound', true);
         }
-
         once('dqm-language-switcher', '.dqm-header-container', context).forEach(function(headerElement) {
-          console.log('[DQM] Adding language switcher to header');
           const languageSwitcher = createLanguageSwitcher();
-          
           let actionsContainer = headerElement.querySelector('.dqm-header-actions');
           if (!actionsContainer) {
             actionsContainer = document.createElement('div');
             actionsContainer.className = 'dqm-header-actions';
             headerElement.appendChild(actionsContainer);
           }
-          
           actionsContainer.appendChild(languageSwitcher);
-          console.log('[DQM] Language switcher added to header actions');
-          
           const aiButton = document.createElement('button');
           aiButton.className = 'dqm-ai-assistant-button';
           aiButton.type = 'button';
@@ -466,28 +357,22 @@
               <path d="m19 9 1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25z"></path>
             </svg>
           `;
-          
           aiButton.addEventListener('click', function() {
             showAIAssistantModal();
           });
-          
           actionsContainer.appendChild(aiButton);
         });
-        
         function showAIAssistantModal() {
           const existingModal = document.querySelector('.dqm-ai-settings-dialog');
           if (existingModal) {
             existingModal.remove();
           }
-          
           const settings = drupalSettings.dqmDrupalModule || {};
           const hasOpenAIKey = settings.openai_api_key && settings.openai_api_key.length > 10;
           const accordionExpanded = !hasOpenAIKey;
-          
           const translationEnabled = localStorage.getItem('dqm_translation_enabled') === 'true';
           const translationMode = localStorage.getItem('dqm_translation_mode') || 'fast';
           const summaryEnabled = localStorage.getItem('dqm_summary_enabled') === 'true';
-          
           const dialogHTML = `
             <div class="dqm-ai-settings-dialog" id="dqm-ai-settings-dialog">
               <div class="dqm-ai-settings-overlay"></div>
@@ -513,7 +398,6 @@
                         <span class="dqm-switch-slider"></span>
                       </label>
                     </div>
-                    
                     <div class="dqm-toggle-item">
                       <div class="dqm-toggle-info">
                         <strong>${t('Full translation power')}</strong>
@@ -524,7 +408,6 @@
                         <span class="dqm-switch-slider"></span>
                       </label>
                     </div>
-                    
                     <div class="dqm-toggle-item">
                       <div class="dqm-toggle-info">
                         <strong>${t('AI summary card')}</strong>
@@ -536,7 +419,6 @@
                       </label>
                     </div>
                   </div>
-                  
                   <div class="dqm-accordion" id="dqm-ai-accordion">
                     <div class="dqm-accordion-header ${accordionExpanded ? 'expanded' : ''}" id="dqm-accordion-header">
                       <div class="dqm-accordion-title">
@@ -554,17 +436,14 @@
                       <div class="dqm-ai-info-box">
                         <p>${t('AI may hallucinate or provide inaccurate information. Review results carefully.')}</p>
                       </div>
-                      
                       <div class="dqm-field-group">
                         <label>${t('Model')}</label>
                         <div class="dqm-readonly-field">${settings.openai_model || 'gpt-4o-mini'}</div>
                       </div>
-                      
                       <div class="dqm-field-group">
                         <label>${t('Base URL')}</label>
                         <div class="dqm-readonly-field">${settings.openai_base_url || 'https://api.openai.com/v1'}</div>
                       </div>
-                      
                       <div class="dqm-field-group">
                         <label>${t('API Key Status')}</label>
                         <div class="dqm-readonly-field">
@@ -573,7 +452,6 @@
                           </span>
                         </div>
                       </div>
-                      
                       ${translationEnabled && hasOpenAIKey ? `
                         <div class="dqm-status-section">
                           <div class="dqm-alert dqm-alert-success">
@@ -581,7 +459,6 @@
                           </div>
                         </div>
                       ` : ''}
-
                       ${!hasOpenAIKey ? `
                         <div class="dqm-warning-box">
                           <p>${t('To change AI settings, visit')} <a href="/admin/config/system/dqm-drupal-module-settings" target="_blank">${t('Plugin Settings')}</a></p>
@@ -589,11 +466,9 @@
                       ` : ''}
                     </div>
                   </div>
-
                   <div class="dqm-ai-warning-box">
                     <p>${t('AI may hallucinate or provide inaccurate information. Review results carefully.')}</p>
                   </div>
-
                   <div id="dqm-translation-progress-container" style="display: none;">
                     <div class="dqm-translation-progress">
                       <div class="dqm-translation-status">
@@ -606,7 +481,6 @@
                     </div>
                   </div>
                 </div>
-
                 <div class="dqm-ai-settings-footer">
                   <button class="dqm-action-btn dqm-action-btn-secondary" id="dqm-ai-clear-cache-btn">
                     ${t('Clear AI cache')}
@@ -624,31 +498,24 @@
               </div>
             </div>
           `;
-          
           document.body.insertAdjacentHTML('beforeend', dialogHTML);
-          
           const dialog = document.getElementById('dqm-ai-settings-dialog');
           setTimeout(() => dialog.classList.add('active'), 10);
-          
           const closeDialog = () => {
             dialog.classList.remove('active');
             setTimeout(() => dialog.remove(), 300);
           };
-          
           document.getElementById('dqm-ai-settings-close').addEventListener('click', closeDialog);
           dialog.querySelector('.dqm-ai-settings-overlay').addEventListener('click', closeDialog);
-          
           const accordionHeader = document.getElementById('dqm-accordion-header');
           const accordionContent = document.getElementById('dqm-accordion-content');
           accordionHeader.addEventListener('click', () => {
             accordionHeader.classList.toggle('expanded');
             accordionContent.classList.toggle('expanded');
           });
-          
           const translationToggle = document.getElementById('dqm-translation-toggle');
           const translationModeToggle = document.getElementById('dqm-translation-mode-toggle');
           const summaryToggle = document.getElementById('dqm-summary-toggle');
-          
           if (translationToggle) {
             translationToggle.addEventListener('change', (e) => {
               localStorage.setItem('dqm_translation_enabled', e.target.checked);
@@ -656,31 +523,26 @@
               if (modeToggle) modeToggle.disabled = !e.target.checked;
             });
           }
-          
           if (translationModeToggle) {
             translationModeToggle.addEventListener('change', (e) => {
               localStorage.setItem('dqm_translation_mode', e.target.checked ? 'full' : 'fast');
             });
           }
-          
           if (summaryToggle) {
             summaryToggle.addEventListener('change', (e) => {
               localStorage.setItem('dqm_summary_enabled', e.target.checked);
             });
           }
-
           const closeBtnFooter = document.getElementById('dqm-ai-close-btn');
           if (closeBtnFooter) {
             closeBtnFooter.addEventListener('click', closeDialog);
           }
-
           const clearCacheBtn = document.getElementById('dqm-ai-clear-cache-btn');
           if (clearCacheBtn) {
             clearCacheBtn.addEventListener('click', () => {
               if (aiTranslationManager) {
                 aiTranslationManager.clearCache();
               }
-              
               clearCacheBtn.textContent = t('Cache cleared');
               clearCacheBtn.disabled = true;
               setTimeout(() => {
@@ -689,27 +551,22 @@
               }, 2000);
             });
           }
-
           const translateBtn = document.getElementById('dqm-ai-translate-btn');
           if (translateBtn && aiTranslationManager) {
             translateBtn.addEventListener('click', async () => {
               translateBtn.disabled = true;
               const originalText = translateBtn.textContent;
               translateBtn.textContent = t('Translating...');
-              
               const progressContainer = document.getElementById('dqm-translation-progress-container');
               const progressFill = document.getElementById('dqm-translation-progress-fill');
               const progressText = document.getElementById('dqm-translation-progress-text');
               const statusText = document.getElementById('dqm-translation-status-text');
-
               if (progressContainer) progressContainer.style.display = 'block';
-              
               if (!translationEnabled) {
                 localStorage.setItem('dqm_translation_enabled', 'true');
                 if (translationToggle) translationToggle.checked = true;
                 if (translationModeToggle) translationModeToggle.disabled = false;
               }
-
               try {
                 const resultsContainer = document.getElementById('dqm-results-container');
                 if (resultsContainer && window.dqmFailedCheckpoints && window.dqmFailedCheckpoints.length > 0) {
@@ -725,16 +582,12 @@
                     },
                     true
                   );
-                  
                   window.dqmFailedCheckpoints = translatedCheckpoints;
-                  
                   translateBtn.textContent = t('Translation complete');
                   if (statusText) statusText.textContent = t('Translation complete');
-                  
                   location.reload();
                 }
               } catch (error) {
-                console.error('Manual translation failed:', error);
                 translateBtn.textContent = t('Translation failed');
               } finally {
                 setTimeout(() => {
@@ -747,7 +600,6 @@
               }
             });
           }
-
           const restartSummaryBtn = document.getElementById('dqm-ai-restart-summary-btn');
           if (restartSummaryBtn && !restartSummaryBtn.disabled) {
             restartSummaryBtn.addEventListener('click', () => {
@@ -760,13 +612,11 @@
               }, 1000);
             });
           }
-
           dialog.addEventListener('click', (e) => {
             if (e.target === dialog) {
               closeDialog();
             }
           });
-
           document.addEventListener('keydown', function escapeHandler(e) {
             if (e.key === 'Escape') {
               closeDialog();
@@ -779,7 +629,6 @@
       }
     }
   };
-
   function runQualityCheck(buttonElement, method) {
     try {
       const $button = $(buttonElement);
@@ -797,7 +646,6 @@
       alert('Error running quality check: ' + e.message);
     }
   }
-
   function performPageScan(requestData, url, buttonElement, assetKey) {
     $.ajax({
       url: url,
@@ -823,7 +671,6 @@
       }
     });
   }
-
   function runUrlBasedScan(buttonElement) {
     try {
       const currentUrl = window.location.href;
@@ -842,13 +689,11 @@
       alert('Error running URL-based scan: ' + e.message);
     }
   }
-
   function runContentBasedScan(buttonElement) {
     try {
       const isPreviewPage = window.location.href.includes('/node/preview/') || window.location.href.includes('/preview/');
       let content = isPreviewPage ? extractPreviewContent() : extractRegularPageContent();
       let extractionMethod = isPreviewPage ? 'preview_content_extraction' : 'regular_page_extraction';
-
       if (!content) {
         resetButtonState(buttonElement);
         return;
@@ -868,7 +713,6 @@
       alert('Error running content-based scan: ' + e.message);
     }
   }
-
   function handleScanResponse(data, buttonElement, assetKey) {
     if (data.success) {
       localStorage.setItem(assetKey, data.assetId);
@@ -878,12 +722,10 @@
       alert('Scan failed: ' + (data.message || 'Unknown error'));
     }
   }
-
   function handleScanError(xhr, status, error, buttonElement) {
     resetButtonState(buttonElement);
     alert('AJAX error: ' + error);
   }
-
   function setButtonText($button, text) {
     if ($button.is('input')) {
       $button.val(text);
@@ -891,7 +733,6 @@
       $button.text(text);
     }
   }
-
   function prepareButtonState($button) {
     $button.data('submitting', true);
     $button.addClass('loading');
@@ -899,26 +740,22 @@
     const originalText = $button.val() || $button.text();
     $button.data('original-text', originalText);
     setButtonText($button, 'Running Quality Check...');
-
     const sourceButton = document.querySelector('.dqm-drupal-module-source-button');
     if (sourceButton) {
       sourceButton.classList.remove('dqm-source-visible');
       sourceButton.style.display = 'none';
     }
   }
-
   function resetButtonState(buttonElement) {
     const $button = $(buttonElement);
     $button.data('submitting', false);
     $button.removeClass('loading');
     $button.prop('disabled', false);
-
     const originalText = $button.data('original-text');
     if (originalText) {
       setButtonText($button, originalText);
     }
   }
-
   function fetchQualityResults(assetId, buttonElement) {
     let resultsContainer = document.getElementById('dqm-results-container');
     if (!resultsContainer) {
@@ -927,9 +764,7 @@
       resultsContainer.className = 'dqm-results-container';
       buttonElement.parentNode.insertBefore(resultsContainer, buttonElement.nextSibling);
     }
-
     resultsContainer.innerHTML = '<div class="dqm-loading"><span class="dqm-spinner"></span></div>';
-
     $.ajax({
       url: Drupal.url('dqm-drupal-module/results/' + assetId),
       method: 'GET',
@@ -969,77 +804,74 @@
           });
         } else {
           resetButtonState(buttonElement);
-          console.warn('[DQM] Failed to load quality results:', response.message || 'Unknown error');
           resultsContainer.innerHTML = '<div class="dqm-card"><p>Failed to load quality results: ' + (response.message || 'Unknown error') + '</p></div>';
         }
       },
       error: function (xhr, status, error) {
-        console.error('[DQM] AJAX error loading quality results:', error, xhr, status);
         resetButtonState(buttonElement);
         resultsContainer.innerHTML = '<div class="dqm-card"><p>Error loading quality results: ' + error + '</p></div>';
       }
     });
   }
-
   function normaliseCheckpoints(checkpoints) {
     return checkpoints.map(cp => ({
       ...cp,
       topics: (cp?.topics ?? []).sort()
     }));
   }
-
   function displayQualityResults(data, container) {
-    console.log('[DQM] displayQualityResults called with', data?.checkpoints?.length, 'checkpoints');
-    console.log('[DQM] Current locale:', currentLocale);
-    
     if (!data || !data.checkpoints || !Array.isArray(data.checkpoints)) {
       container.innerHTML = '<div class="dqm-card"><p>No quality results available.</p></div>';
       return;
     }
-
+    renderQualityResults(data, container);
     if (currentLocale !== 'en' && aiTranslationManager && data.checkpoints.length > 0) {
-      console.log('[DQM] ✅ Will translate checkpoint CONTENT to:', currentLocale);
-      console.log('[DQM] Note: UI text is already translated via i18n JSON files');
-      
       const translateAndDisplay = async () => {
         try {
-          console.log('[DQM] 🌍 Starting AI translation of checkpoint content to', currentLocale);
-          console.log('[DQM] Step 1: Translating checkpoint titles (fast)');
-          
-          await aiTranslationManager.translateCheckpoints(
+          const progressContainer = document.querySelector('#dqm-translation-progress-container');
+          const progressFill = document.querySelector('#dqm-translation-progress-fill');
+          const progressText = document.querySelector('#dqm-translation-progress-text');
+          const statusText = document.querySelector('#dqm-translation-status-text');
+          if (progressContainer) {
+            progressContainer.style.display = 'block';
+            if (statusText) statusText.textContent = t('Translating...');
+          }
+          const onProgress = (progress) => {
+             if (progressFill && progressText) {
+               const percent = Math.round((progress.translatedCheckpoints / progress.totalCheckpoints) * 100);
+               progressFill.style.width = `${percent}%`;
+               progressText.textContent = `${progress.translatedCheckpoints} / ${progress.totalCheckpoints} ${t('checkpoints translated')}`;
+             }
+          };
+          data.checkpoints = await aiTranslationManager.translateCheckpoints(
             data.checkpoints,
             currentLocale,
-            (progress) => {
-              console.log('[DQM] 📊 Title translation progress:', progress);
-            },
+            onProgress,
             true 
           );
-          
-          console.log('[DQM] ✅ Checkpoint titles translated');
-          console.log('[DQM] Step 2: Translating full checkpoint content');
-          
-          await aiTranslationManager.translateCheckpoints(
+          data.checkpoints = await aiTranslationManager.translateCheckpoints(
             data.checkpoints,
             currentLocale,
-            (progress) => {
-              console.log('[DQM] 📊 Full content translation progress:', progress);
-            },
+            onProgress,
             false 
           );
-          
-          console.log('[DQM] ✅ Full checkpoint content translation complete');
-          console.log('[DQM] Re-rendering UI with translated checkpoint data');
+          if (progressContainer) {
+             progressContainer.style.display = 'none';
+          }
           renderQualityResults(data, container);
         } catch (error) {
           console.error('[DQM] ❌ Checkpoint translation failed:', error);
           console.error('[DQM] Error details:', error.message, error.stack);
-          console.log('[DQM] Falling back to English checkpoint content');
+          
+          const progressContainer = document.querySelector('#dqm-translation-progress-container');
+          if (progressContainer) {
+             progressContainer.style.display = 'none';
+          }
           renderQualityResults(data, container);
         }
       };
-      
       translateAndDisplay();
-      return;
+      return; 
     } else {
       if (currentLocale === 'en') {
         console.log('[DQM] ⏭️ Skipping checkpoint translation (English selected)');
@@ -1049,19 +881,13 @@
         console.log('[DQM] ⏭️ Skipping checkpoint translation (no checkpoints)');
       }
     }
-
-    console.log('[DQM] Rendering results (UI text from i18n, checkpoint content in English)');
-    renderQualityResults(data, container);
   }
-
   function renderQualityResults(data, container) {
-
     const sourceButton = document.querySelector('.dqm-drupal-module-source-button');
     if (sourceButton) {
       sourceButton.classList.remove('dqm-source-visible');
       sourceButton.style.display = 'none';
     }
-
     const topicColors = {
       'Accessibility': '#006675',
       'SEO': '#2fe8b6',
@@ -1070,31 +896,35 @@
       'Legal': '#001746',
       'Usability': '#cdd1d0'
     };
-
+    const getCanonicalTopic = (topicName) => {
+      if (typeof window.DQM_I18N !== 'undefined' && typeof window.DQM_I18N.getEnglishKey === 'function') {
+        const canonical = window.DQM_I18N.getEnglishKey(topicName);
+        return canonical;
+      }
+      return topicName;
+    };
     const checkpoints = normaliseCheckpoints(data.checkpoints);
     let passedCount = 0;
     const totalCount = checkpoints.length;
     const failedCheckpoints = [];
     const topicCounts = {};
-
     for (const checkpoint of checkpoints) {
       if (checkpoint.failed === true) {
         failedCheckpoints.push(checkpoint);
       } else {
         passedCount++;
       }
-
       for (const topic of checkpoint.topics) {
         if (!topicCounts[topic]) {
+          const canonicalTopic = getCanonicalTopic(topic);
           topicCounts[topic] = {
             total: 0,
             passed: 0,
             failed: 0,
-            color: topicColors[topic] || '#888',
-            className: topic.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+            color: topicColors[topic] || topicColors[canonicalTopic] || '#888',
+            className: (canonicalTopic || topic).toLowerCase().replace(/[^a-z0-9]+/g, '-')
           };
         }
-
         topicCounts[topic].total++;
         if (checkpoint.failed === true) {
           topicCounts[topic].failed++;
@@ -1103,15 +933,12 @@
         }
       }
     }
-
     for (const [key, value] of Object.entries(topicCounts)) {
       topicCounts[key].percent = value.total > 0 ? Math.round((value.passed / value.total) * 100) : 0;
     }
-
     const sortedTopics = Object.keys(topicCounts).sort();
     const percent = totalCount > 0 ? Math.round((passedCount / totalCount) * 100) : 0;
     const failedCount = totalCount - passedCount;
-
     let html = `
       <div class="dqm-card dqm-overview-section">
         <h3>📊 ${t('Quality Overview')}</h3>
@@ -1132,7 +959,6 @@
         </div>
       </div>
     `;
-
     let topicsHtml = '';
     for (const name of sortedTopics) {
       const topic = topicCounts[name];
@@ -1141,7 +967,7 @@
       }
       topicsHtml += `<div class="dqm-topic-breakdown">
         <div class="dqm-topic-header">
-          <span class="dqm-topic-badge" style="background:${topic.color}">${name}</span>
+          <span class="dqm-topic-badge" style="background:${topic.color}">${t(name)}</span>
           <span>${topic.passed}/${topic.total} ${t('passed')}</span>
         </div>
         <div class="dqm-progress-bar">
@@ -1149,24 +975,20 @@
         </div>
       </div>`;
     }
-
     html += `<div class="dqm-card">
       <h3>📈 ${t('Quality Breakdown')}</h3>
       ${topicsHtml}
     </div>`;
-
     if (failedCheckpoints.length > 0) {
       let topicsFilterHtml = '';
       let topicOptionsHtml = '';
-
       for (const topic of sortedTopics) {
         const topicInfo = topicCounts[topic];
         if (topicInfo.failed > 0) {
           const count = topicInfo.total - topicInfo.passed;
-          topicOptionsHtml += `<option value="${topicInfo.className}">${topic} (${count})</option>`;
+          topicOptionsHtml += `<option value="${topicInfo.className}">${t(topic)} (${count})</option>`;
         }
       }
-
       if (topicOptionsHtml.length > 0) {
         topicsFilterHtml = `<div class="dqm-filter-container">
           <select class="dqm-topics-filter" id="dqm-topics-filter">
@@ -1175,7 +997,6 @@
           </select>
         </div>`;
       }
-
       let failedCheckpointsHtml = '';
       for (const checkpoint of failedCheckpoints) {
         let checkpointBadgesHtml = '';
@@ -1189,7 +1010,6 @@
         const topicClasses = checkpoint.topics.map((topic) => 'topic-' + topicCounts[topic].className).join(' ');
         let cannotHighlightHtml = '';
         let notHighlightable = false;
-
         if (checkpoint.hasOwnProperty('_canHighlightPage') && checkpoint._canHighlightPage === false &&
             checkpoint.canHighlight && checkpoint.canHighlight.source === false) {
           cannotHighlightHtml = `<span class="dqm-cannot-highlight">${t('Cannot highlight')}</span>`;
@@ -1213,7 +1033,6 @@
           </div>
         </div>`;
       }
-
       html += `<div class="dqm-card">
         <h3>❌ ${t('Failed Checkpoints')} (${failedCheckpoints.length})</h3>
         <div class="dqm-topics-filter-container">
@@ -1229,7 +1048,6 @@
       </div>`;
     }
     html += `<button class="dqm-drupal-module-run-quality-check-secondary button">${t('Run Quality Check')}</button>`;
-
     setTimeout(function () {
       const checkpointItems = container.querySelectorAll('.dqm-checkpoint-item[data-error-id]');
       checkpointItems.forEach(function (item) {
@@ -1251,28 +1069,22 @@
                 el.removeAttribute('style');
               }
             });
-            
             const mainCanvas = document.querySelector('.dialog-off-canvas-main-canvas');
             if (mainCanvas && mainCanvas.hasAttribute('data-original-content')) {
               const originalContent = mainCanvas.getAttribute('data-original-content');
               mainCanvas.innerHTML = originalContent;
               mainCanvas.removeAttribute('data-original-content');
-              
               const sourceButton = document.querySelector('.dqm-drupal-module-source-button');
               if (sourceButton) {
                 setButtonText($(sourceButton), 'Source');
               }
             }
-            
             return;
           }
-          
           checkpointItems.forEach(function (i) { i.classList.remove('active'); });
           this.classList.add('active');
-          
           const errorId = this.getAttribute('data-error-id');
           const checkpoint = failedCheckpoints.find(cp => cp.id === errorId);
-          
           document.querySelectorAll('.dqm-element-highlight').forEach(function (el) {
             el.classList.remove('dqm-element-highlight');
             if (el.hasAttribute('data-dqm-original-style')) {
@@ -1282,7 +1094,6 @@
               el.removeAttribute('style');
             }
           });
-          
           if (checkpoint && checkpoint.canHighlight) {
             if (
               checkpoint.canHighlight.source === true &&
@@ -1323,7 +1134,6 @@
                 );
                 mainCanvas.innerHTML = originalContent;
                 mainCanvas.removeAttribute("data-original-content");
-
                 const sourceButton = document.querySelector(
                   ".dqm-drupal-module-source-button"
                 );
@@ -1348,7 +1158,6 @@
               }
             }
           }
-          
           if (!errorId) return;
           const assetKey = 'dqm_asset_id_' + btoa(window.location.href);
           const assetId = localStorage.getItem(assetKey);
@@ -1361,7 +1170,6 @@
               checkpoint.canHighlight.page === false) {
             return;
           }
-          
           $.ajax({
             url: Drupal.url('dqm-drupal-module/error-highlight/' + assetId + '/' + errorId),
             method: 'GET',
@@ -1389,18 +1197,15 @@
               const tempDiv = document.createElement('div');
               tempDiv.innerHTML = response.html;
               const highlightEl = tempDiv.querySelector('[style*="background:yellow"], [style*="background: yellow"], [style*="background-color:yellow"], [style*="background-color: yellow"]');
-              
               if (highlightEl) {
                 let found = false;
                 const highlightStyle = 'background: yellow !important; border: 2px solid red !important;';
-
                 let textToFind = highlightEl.textContent.trim();
                 const allElements = document.querySelectorAll('*');
                 for (const el of allElements) {
                   if (['SCRIPT', 'STYLE', 'META', 'LINK', 'TITLE'].includes(el.tagName)) {
                     continue;
                   }
-                  
                   if (el.textContent.trim() === textToFind) {
                     if (!el.hasAttribute('data-dqm-original-style')) {
                       el.setAttribute('data-dqm-original-style', el.getAttribute('style') || '');
@@ -1412,13 +1217,11 @@
                   }
                 }
                 if (!found) {
-                  
                   const innerElements = highlightEl.querySelectorAll('*');
                   for (const innerEl of innerElements) {
                     const innerText = innerEl.textContent.trim();
                     if (innerText.length > 10) {
                       const tagName = innerEl.tagName;
-                      
                       for (const pageEl of allElements) {
                         if (pageEl.tagName === tagName && 
                             pageEl.textContent.trim() === innerText &&
@@ -1441,13 +1244,10 @@
                   if (words.length > 0) {
                     let bestMatch = null;
                     let bestScore = 0;
-                    
                     for (const el of allElements) {   
-                     
                       if (['SCRIPT', 'STYLE', 'META', 'LINK', 'TITLE'].includes(el.tagName)) {
                         continue;
                       }
-                      
                       const elText = el.textContent.trim();
                       if (elText.length > 10) {
                         let score = 0;
@@ -1463,7 +1263,6 @@
                         }
                       }
                     }
-                    
                     if (bestMatch) {
                       if (!bestMatch.hasAttribute('data-dqm-original-style')) {
                         bestMatch.setAttribute('data-dqm-original-style', bestMatch.getAttribute('style') || '');
@@ -1474,7 +1273,6 @@
                     }
                   }
                 }
-                
                 if (!found) {
                   alert('Could not find the matching content to highlight on this page.');
                 }
@@ -1503,26 +1301,20 @@
         });
       });
     }, 0);
-
     container.innerHTML = html;
-
-    
     const assetKey = 'dqm_asset_id_' + btoa(window.location.href);
     const assetId = localStorage.getItem(assetKey);
     if (assetId && data.checkpoints) {
       generateAISummary(assetId, data.checkpoints);
     }
-
     const pieChart = container.querySelector('.dqm-pie-chart');
     if (pieChart) {
       const percentage = parseInt(pieChart.getAttribute('data-percent') || '0');
       const passedDegrees = Math.round((percentage / 100) * 360);
       const failedDegrees = 360 - passedDegrees;
-
       const background = (passedDegrees > 0) ? `conic-gradient(#b604d4 0deg ${passedDegrees}deg, #303747 ${passedDegrees}deg 360deg)` : `#303747`;
       pieChart.style.background = background;
     }
-
     let modal = document.getElementById('dqm-checkpoint-modal');
     if (!modal) {
       modal = document.createElement('div');
@@ -1545,7 +1337,6 @@
       });
       document.body.appendChild(modal);
     }
-
     function showModal(cp) {
       modal.innerHTML = '';
       const title = document.createElement('div');
@@ -1596,14 +1387,12 @@
     modal.addEventListener('mouseleave', function () {
       modal.style.display = 'none';
     });
-
     const filterSelect = container.querySelector('#dqm-topics-filter');
     if (filterSelect) {
       filterSelect.addEventListener('change', function (e) {
         const selectedTopic = e.target.value;
         const checkpointItems = container.querySelectorAll('.dqm-checkpoint-item');
         let visibleCount = 0;
-
         checkpointItems.forEach(function (item) {
           if (selectedTopic === 'all') {
             item.style.display = 'flex';
@@ -1613,7 +1402,6 @@
             const topicArray = itemTopics.split(',').map(function (topic) {
               return topic.toLowerCase().replace(/[^a-z0-9]+/g, '-');
             });
-
             if (topicArray.indexOf(selectedTopic) !== -1) {
               item.style.display = 'flex';
               visibleCount++;
@@ -1622,7 +1410,6 @@
             }
           }
         });
-
         const cardTitle = container.querySelector('.dqm-card h3');
         if (cardTitle && selectedTopic !== 'all') {
           const selectedTopicName = e.target.options[e.target.selectedIndex].text.split(' (')[0];
@@ -1642,10 +1429,8 @@
         }
       });
     }
-
     window.dqmFailedCheckpoints = failedCheckpoints
   }
-
   function showSourceButton() {
     const sourceButton = document.querySelector('.dqm-drupal-module-source-button');
     if (sourceButton) {
@@ -1653,7 +1438,6 @@
       sourceButton.style.display = 'block';
     }
   }
-
   function hideSourceButton() {
     const sourceButton = document.querySelector('.dqm-drupal-module-source-button');
     if (sourceButton) {
@@ -1661,7 +1445,6 @@
       sourceButton.style.display = 'none';
     }
   }
-
   function extractPreviewContent() {
     const contentSelectors = [
       '.node-preview',
@@ -1674,16 +1457,13 @@
       '#main-content',
       '[role="main"]'
     ];
-
     let contentElement = null;
-
     for (let i = 0; i < contentSelectors.length; i++) {
       contentElement = document.querySelector(contentSelectors[i]);
       if (contentElement) {
         break;
       }
     }
-
     if (!contentElement) {
       return extractCleanBodyContent();
     }
@@ -1691,25 +1471,20 @@
     removeAdminElements(contentClone);
     return createCleanHtmlStructure(contentClone.outerHTML);
   }
-
   function extractRegularPageContent() {
     const html = document.querySelector('.dialog-off-canvas-main-canvas');
     if (!html) {
       return extractCleanBodyContent();
     }
-
     const htmlClone = html.cloneNode(true);
     removeAdminElements(htmlClone);
     return createCleanHtmlStructure(htmlClone.innerHTML);
   }
-
   function extractCleanBodyContent() {
     const bodyClone = document.body.cloneNode(true);
-
     removeAdminElements(bodyClone);
     return createCleanHtmlStructure(bodyClone.innerHTML);
   }
-
   function removeAdminElements(element) {
     const adminSelectors = [
       '.toolbar',
@@ -1745,9 +1520,7 @@
       '[style*="display: none"]',
       '[style*="display:none"]'
     ];
-
     let removedCount = 0;
-
     for (const selector of adminSelectors) {
       const elements = element.querySelectorAll(selector);
       for (const el of elements) {
@@ -1755,7 +1528,6 @@
         removedCount++;
       }
     }
-
     const allElements = element.querySelectorAll('*');
     for (const el of allElements) {
       if (el.className && typeof el.className === 'string') {
@@ -1774,7 +1546,6 @@
           }
         }
       }
-
       if (el.hasAttribute('data-drupal-selector') ||
         el.hasAttribute('data-quickedit-entity-id') ||
         el.hasAttribute('data-contextual-id')) {
@@ -1783,18 +1554,13 @@
         el.removeAttribute('data-contextual-id');
       }
     }
-
     return element;
   }
-
   function createCleanHtmlStructure(bodyContent) {
     const pageTitle = document.title || 'Page Content';
-
     const descMeta = document.querySelector('meta[name="description"]');
     const metaDescription = descMeta ? '<meta name="description" content="' + descMeta.getAttribute('content') + '">' : '';
-
     const lang = document.documentElement.lang || 'en';
-
     return `<!DOCTYPE html>
     <html lang="${lang}">
         <head>
@@ -1806,7 +1572,6 @@
         <body>${bodyContent}</body>
     </html>`;
   }
-
   function addLocalHighlighting() {
     if (!$('#dqm-highlight-styles').length) {
       $('head').append('<style id="dqm-highlight-styles">' +
@@ -1816,29 +1581,23 @@
     }
     $('main h1, main h2, main h3, main h4, main h5, main h6, main p, main img, main figure, main table, main ul, main ol, article h1, article h2, article h3, article h4, article h5, article h6, article p, article img, article figure, article table, article ul, article ol').addClass('dqm-element-highlight');
   }
-
   function togglePageHighlight(buttonElement) {
     try {
       const $button = $(buttonElement);
       const isHighlightActive = $button.hasClass('active');
-
       if (isHighlightActive) {
         $('.dqm-element-highlight').each(function () {
           $(this).removeClass('dqm-element-highlight');
         });
-
         $('#dqm-highlight-overlay').remove();
         $('#dqm-highlight-styles').remove();
-
         $button.removeClass('active');
         $button.val(Drupal.t('Page Highlight'));
       } else {
         $button.prop('disabled', true);
-
         const currentUrl = window.location.href;
         const assetKey = 'dqm_asset_id_' + btoa(currentUrl);
         const existingAssetId = localStorage.getItem(assetKey);
-
         if (!existingAssetId) {
           addLocalHighlighting();
           $button.addClass('active');
@@ -1846,13 +1605,11 @@
           $button.prop('disabled', false);
           return;
         }
-
         let apiKey;
         try {
           if (drupalSettings && drupalSettings.dqmDrupalModule && drupalSettings.dqmDrupalModule.apiKey) {
             apiKey = drupalSettings.dqmDrupalModule.apiKey;
           } else {
-            console.warn('API key not found in drupalSettings');
             addLocalHighlighting();
             $button.addClass('active');
             $button.val(Drupal.t('Page Highlighting'));
@@ -1860,14 +1617,12 @@
             return;
           }
         } catch (e) {
-          console.warn('Error accessing drupalSettings:', e);
           addLocalHighlighting();
           $button.addClass('active');
           $button.val(Drupal.t('Remove Highlight'));
           resetButtonState($button);
           return;
         }
-
         $.ajax({
           url: Drupal.url('dqm-drupal-module/highlight/' + existingAssetId),
           method: 'GET',
@@ -1883,18 +1638,14 @@
                   '.dqm-element-highlight:hover { outline: 3px solid #b604d4 !important; }' +
                   '</style>');
               }
-
               const tempDiv = document.createElement('div');
               tempDiv.style.display = 'none';
               tempDiv.innerHTML = response;
               document.body.appendChild(tempDiv);
-
               let foundElements = false;
-
               $(tempDiv).find('.dqm-element-highlight').each(function () {
                 const tagName = this.tagName.toLowerCase();
                 const text = $(this).text().trim();
-
                 if (text) {
                   $(`${tagName}`).each(function () {
                     if ($(this).text().trim() === text) {
@@ -1904,25 +1655,19 @@
                   });
                 }
               });
-
               if (!foundElements) {
-                console.log('No matching elements found, applying fallback highlighting');
                 $('main h1, main h2, main h3, main h4, main h5, main h6, main p, main img, main figure, main table, main ul, main ol, article h1, article h2, article h3, article h4, article h5, article h6, article p, article img, article figure, article table, article ul, article ol').addClass('dqm-element-highlight');
               }
-
               document.body.removeChild(tempDiv);
-
               $button.addClass('active');
               $button.val(Drupal.t('Page Highlighting'));
             } catch (e) {
-              console.error('Error processing highlight response:', e);
               alert('Error processing highlight data: ' + e.message);
               $('main h1, main h2, main h3, main h4, main h5, main h6, main p, main img, main figure, main table, main ul, main ol, article h1, article h2, article h3, article h4, article h5, article h6, article p, article img, article figure, article table, article ul, article ol').addClass('dqm-element-highlight');
             }
             $button.prop('disabled', false);
           },
           error: function (xhr, status, error) {
-            console.error('API error:', xhr, status, error);
             addLocalHighlighting();
             $button.addClass('active');
             $button.val(Drupal.t('Page Highlighting'));
@@ -1931,32 +1676,26 @@
         });
       }
     } catch (e) {
-      console.error('Error in togglePageHighlight:', e);
       alert('Error toggling page highlight: ' + e.message);
       resetButtonState($(buttonElement));
     }
   }
-
   function showSourceModal(buttonElement) {
   try {
     const $button = $(buttonElement);
     if ($button.data('loading')) {
       return;
     }
-
     const mainCanvas = document.querySelector('.dialog-off-canvas-main-canvas');
     if (!mainCanvas) {
       alert('Main canvas area not found');
       return;
     }
-
     const isShowingSource = mainCanvas.hasAttribute('data-original-content');
-
     const activeCheckpoint = document.querySelector('.dqm-checkpoint-item.active');
     let isSourceOnly = false;
     let shouldHighlightError = false;
     let activeErrorId = null;
-    
     if (activeCheckpoint) {
       const errorId = activeCheckpoint.getAttribute('data-error-id');
       const checkpoint = window.dqmFailedCheckpoints?.find(cp => cp.id === errorId);
@@ -1969,7 +1708,6 @@
         }
       }
     }
-
     if (isShowingSource && !isSourceOnly) {
       const originalContent = mainCanvas.getAttribute('data-original-content');
       if (originalContent) {
@@ -1979,24 +1717,19 @@
       }
       return;
     }
-
     const currentUrl = window.location.href;
     const assetKey = 'dqm_asset_id_' + btoa(currentUrl);
     const existingAssetId = localStorage.getItem(assetKey);
-
     if (!existingAssetId) {
       alert('No asset ID found for this page. Please run a quality check first.');
       return;
     }
-
     $button.data('loading', true);
     $button.prop('disabled', true);
     setButtonText($button, 'Loading...');
-
     if (!isSourceOnly) {
       mainCanvas.setAttribute('data-original-content', mainCanvas.innerHTML);
     }
-
     mainCanvas.innerHTML = `
       <div class="dqm-source-container">
         <div class="dqm-source-loading">
@@ -2006,7 +1739,6 @@
         <div class="dqm-source-code" style="display: none;"></div>
       </div>
     `;
-
     let endpoint, loadingText;
     if (shouldHighlightError && activeErrorId) {
       endpoint = Drupal.url('dqm-drupal-module/error-highlight-source/' + existingAssetId + '/' + activeErrorId);
@@ -2019,7 +1751,6 @@
     if (loadingElement) {
       loadingElement.innerHTML = `<span class="dqm-spinner"></span>${loadingText}`;
     }
-
     $.ajax({
       url: endpoint,
       method: 'GET',
@@ -2029,7 +1760,6 @@
           if (response && response.success && response.html) {
             const codeElement = mainCanvas.querySelector('.dqm-source-code');
             const loadingElement = mainCanvas.querySelector('.dqm-source-loading');
-
             if (codeElement && loadingElement) {
               if (shouldHighlightError && activeErrorId) {
                 const shadow = codeElement.attachShadow({ mode: "open" });
@@ -2038,10 +1768,8 @@
                 const shadow = codeElement.attachShadow({ mode: "open" });
                 shadow.innerHTML = `<pre style="font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.4; white-space: pre-wrap; margin: 0;">${response.html}</pre>`;
               }
-              
               loadingElement.style.display = 'none';
               codeElement.style.display = 'block';
-              
               if (isSourceOnly) {
                 setButtonText($button, 'Source');
               } else {
@@ -2077,7 +1805,6 @@
         $button.prop('disabled', false);
       }
     });
-
   } catch (e) {
     alert('Error showing source: ' + e.message);
     const $button = $(buttonElement);
@@ -2093,14 +1820,12 @@
     }
   }
 }
-
   function showSourceModalWithHighlight(buttonElement, errorId) {
     try {
       const $button = $(buttonElement);
       if ($button.data("loading")) {
         return;
       }
-
       const mainCanvas = document.querySelector(
         ".dialog-off-canvas-main-canvas"
       );
@@ -2108,25 +1833,21 @@
         alert("Main canvas area not found");
         return;
       }
-
       const currentUrl = window.location.href;
       const assetKey = "dqm_asset_id_" + btoa(currentUrl);
       const existingAssetId = localStorage.getItem(assetKey);
-
       if (!existingAssetId) {
         alert(
           "No asset ID found for this page. Please run a quality check first."
         );
         return;
       }
-
       $button.data("loading", true);
       $button.prop("disabled", true);
       setButtonText($button, "Loading...");
       if (!mainCanvas.hasAttribute("data-original-content")) {
         mainCanvas.setAttribute("data-original-content", mainCanvas.innerHTML);
       }
-
       mainCanvas.innerHTML = `
       <div class="dqm-source-container">
         <div class="dqm-source-loading">
@@ -2136,7 +1857,6 @@
         <div class="dqm-source-code" style="display: none;"></div>
       </div>
     `;
-
       $.ajax({
         url: Drupal.url(
           "dqm-drupal-module/error-highlight-source/" +
@@ -2153,13 +1873,11 @@
               const loadingElement = mainCanvas.querySelector(
                 ".dqm-source-loading"
               );
-
               if (codeElement && loadingElement) {
                 const shadow = codeElement.attachShadow({ mode: "open" });
                 shadow.innerHTML = response.html;
                 loadingElement.style.display = "none";
                 codeElement.style.display = "block";
-
                 setButtonText($button, "Browser");
                 setTimeout(function() {
                   scrollToHighlightedCode(mainCanvas);
@@ -2206,13 +1924,10 @@
       $button.prop("disabled", false);
     }
   }
-
   function scrollToHighlightedCode(container) {
     try {
       let highlightedElement = null;
-
       highlightedElement = container.querySelector("tr.astError, td.astError");
-
       if (!highlightedElement) {
         const errorIconCells = container.querySelectorAll("td.errorIcon");
         errorIconCells.forEach((cell) => {
@@ -2221,31 +1936,26 @@
           }
         });
       }
-
       if (!highlightedElement) {
         highlightedElement = container.querySelector(
           "td.content span.astError, td.content span.astHighlightFull"
         );
       }
-
       if (!highlightedElement) {
         highlightedElement = container.querySelector(
           ".astError.astHighlightFull, .astError, .astHighlightFull"
         );
       }
-
       if (!highlightedElement) {
         highlightedElement = container.querySelector(
           '[style*="background:yellow"], [style*="background-color:yellow"], [style*="background: yellow"]'
         );
       }
-
       if (!highlightedElement) {
         highlightedElement = container.querySelector(
           'span[style*="background"], td[style*="background"]'
         );
       }
-
       if (
         highlightedElement &&
         (highlightedElement.tagName === "SPAN" ||
@@ -2256,15 +1966,12 @@
           highlightedElement = parentRow;
         }
       }
-
       if (highlightedElement) {
         const sourceContainer =
           container.querySelector(".dqm-source-code, pre, #sourceViewTable") ||
           container;
-
         const elementRect = highlightedElement.getBoundingClientRect();
         const containerRect = sourceContainer.getBoundingClientRect();
-
         let scrollTop;
         if (sourceContainer.scrollTop !== undefined) {
           scrollTop =
@@ -2275,7 +1982,6 @@
         } else {
           scrollTop = highlightedElement.offsetTop - 100;
         }
-
         if (sourceContainer.scrollTo) {
           sourceContainer.scrollTo({
             top: Math.max(0, scrollTop),
@@ -2289,11 +1995,9 @@
             behavior: "smooth",
           });
         }
-
         highlightedElement.style.transition = "background-color 0.3s ease";
         const originalBackground = highlightedElement.style.backgroundColor;
         highlightedElement.style.backgroundColor = "rgba(182, 4, 212, 0.2)";
-
         setTimeout(function () {
           if (highlightedElement.style) {
             highlightedElement.style.backgroundColor = originalBackground;
@@ -2305,23 +2009,19 @@
       console.error("Error scrolling to highlighted code:", e);
     }
   }
-
   function generateAISummary(assetId, checkpoints) {
     const container = document.getElementById('dqm-ai-summary-container');
     if (!container) {
       console.warn('[DQM] AI summary container not found');
       return;
     }
-
     const settings = drupalSettings.dqmDrupalModule || {};
     const summaryEnabled = localStorage.getItem('dqm_summary_enabled') === 'true';
     const hasOpenAIKey = settings.openai_api_key && settings.openai_api_key.length > 10;
-
     if (!summaryEnabled || !hasOpenAIKey) {
       container.style.display = 'none';
       return;
     }
-
     container.style.display = 'block';
     container.innerHTML = `
       <div class="dqm-card dqm-ai-summary-card">
@@ -2340,9 +2040,7 @@
         </div>
       </div>
     `;
-
-    const currentLang = localStorage.getItem('dqm_target_lang') || 'en';
-
+    const currentLang = currentLocale || localStorage.getItem(STORAGE_KEY_LOCALE) || 'en';
     fetch(Drupal.url('dqm-drupal-module/ai-summary'), {
       method: 'POST',
       headers: {
@@ -2358,7 +2056,6 @@
     .then(data => {
       if (data.success && data.bullets && Array.isArray(data.bullets)) {
         const bulletHTML = data.bullets.map(bullet => `<li>${escapeHtml(bullet)}</li>`).join('');
-        
         container.innerHTML = `
           <div class="dqm-card dqm-ai-summary-card">
             <div class="dqm-ai-summary-header">
@@ -2397,8 +2094,6 @@
             </div>
           </div>
         `;
-        
-        
         const settingsBtn = document.getElementById('dqm-ai-settings-btn');
         if (settingsBtn) {
           settingsBtn.addEventListener('click', () => {
@@ -2408,10 +2103,7 @@
             }
           });
         }
-        
         const regenerateHandler = () => {
-          console.log('[DQM] Regenerating AI summary');
-          
           container.innerHTML = `
             <div class="dqm-card dqm-ai-summary-card">
               <div class="dqm-ai-summary-header">
@@ -2429,15 +2121,12 @@
               </div>
             </div>
           `;
-          
           generateAISummary(assetId, checkpoints);
         };
-
         const regenerateHeaderBtn = document.getElementById('dqm-ai-regenerate-header-btn');
         if (regenerateHeaderBtn) {
           regenerateHeaderBtn.addEventListener('click', regenerateHandler);
         }
-
         const regenerateFooterBtn = document.getElementById('dqm-ai-regenerate-btn');
         if (regenerateFooterBtn) {
           regenerateFooterBtn.addEventListener('click', regenerateHandler);
@@ -2451,7 +2140,6 @@
       }
     })
     .catch(error => {
-      console.error('[DQM] AI summary generation failed:', error);
       container.innerHTML = `
         <div class="dqm-card dqm-ai-summary-card dqm-error">
           <p>${t('Error')}: ${t('Failed to generate summary')}</p>
@@ -2459,7 +2147,5 @@
       `;
     });
   }
-
   window.dqmFailedCheckpoints = [];
-
 })(jQuery, Drupal, window.once);

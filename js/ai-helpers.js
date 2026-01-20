@@ -1,10 +1,7 @@
-
 window.DQM_AI_Helpers = {
-
     isGPT5Model(model) {
         return model && model.startsWith('gpt-5');
     },
-
     getModelCapabilities(model) {
         const capabilities = {
             supportsReasoningEffort: this.isGPT5Model(model),
@@ -14,7 +11,6 @@ window.DQM_AI_Helpers = {
         };
         return capabilities;
     },
-
     formatTranslationProgress(progress) {
         const { translatedCheckpoints, totalCheckpoints } = progress;
         const percentage = totalCheckpoints > 0 
@@ -25,7 +21,6 @@ window.DQM_AI_Helpers = {
             percentage: percentage
         };
     },
-
     getTranslationStateLabel(state, t = (s) => s) {
         const labels = {
             idle: t('Ready'),
@@ -37,7 +32,6 @@ window.DQM_AI_Helpers = {
         };
         return labels[state] || state;
     },
-
     getTranslationStateColor(state) {
         const colors = {
             idle: '#6b7280',
@@ -49,23 +43,19 @@ window.DQM_AI_Helpers = {
         };
         return colors[state] || '#6b7280';
     },
-
     createTranslationProgressHTML(progress, state, error, t = (s) => s) {
         if (state === 'idle' || !progress) {
             return '';
         }
-
         const { text, percentage } = this.formatTranslationProgress(progress);
         const stateLabel = this.getTranslationStateLabel(state, t);
         const color = this.getTranslationStateColor(state);
-
         let html = `
             <div class="dqm-translation-progress" data-state="${state}">
                 <div class="dqm-translation-status" style="color: ${color};">
                     <strong>${stateLabel}</strong>
                 </div>
         `;
-
         if (state === 'translating' || state === 'initializing') {
             html += `
                 <div class="dqm-progress-bar">
@@ -74,7 +64,6 @@ window.DQM_AI_Helpers = {
                 <div class="dqm-progress-text">${text}</div>
             `;
         }
-
         if (error) {
             html += `
                 <div class="dqm-translation-error">
@@ -83,32 +72,25 @@ window.DQM_AI_Helpers = {
                 </div>
             `;
         }
-
         html += `</div>`;
         return html;
     },
-
     validateOpenAIConfig(config) {
         const errors = [];
-
         if (!config.apiKey || config.apiKey.length < 10) {
             errors.push('Invalid or missing API key');
         }
-
         if (!config.model) {
             errors.push('No model selected');
         }
-
         if (!config.baseUrl || !config.baseUrl.startsWith('http')) {
             errors.push('Invalid base URL');
         }
-
         return {
             valid: errors.length === 0,
             errors: errors
         };
     },
-
     getLanguageName(code) {
         const languages = {
             en: 'English',
@@ -127,13 +109,11 @@ window.DQM_AI_Helpers = {
         };
         return languages[code] || code.toUpperCase();
     },
-
     estimateTranslationTime(checkpointCount, mode = 'fast') {
         const timePerCheckpoint = mode === 'fast' ? 0.5 : 1.5;
         const batchSize = 10;
         const batches = Math.ceil(checkpointCount / batchSize);
         const estimatedSeconds = batches * timePerCheckpoint;
-
         if (estimatedSeconds < 60) {
             return `~${Math.ceil(estimatedSeconds)} seconds`;
         } else {
@@ -141,12 +121,9 @@ window.DQM_AI_Helpers = {
             return `~${minutes} minute${minutes > 1 ? 's' : ''}`;
         }
     },
-
     formatAPIError(error, t = (s) => s) {
         if (!error) return '';
-
         const errorString = error.toString().toLowerCase();
-
         if (errorString.includes('network')) {
             return t('Network error. Please check your connection.');
         }
@@ -162,10 +139,8 @@ window.DQM_AI_Helpers = {
         if (errorString.includes('500') || errorString.includes('502') || errorString.includes('503')) {
             return t('OpenAI service error. Please try again later.');
         }
-
         return error.message || error.toString();
     },
-
     createAlert(type, message, icon = null) {
         const icons = {
             info: 'fa-circle-info',
@@ -173,17 +148,14 @@ window.DQM_AI_Helpers = {
             warning: 'fa-triangle-exclamation',
             error: 'fa-circle-exclamation'
         };
-
         const colors = {
             info: '#3b82f6',
             success: '#10b981',
             warning: '#f59e0b',
             error: '#ef4444'
         };
-
         const iconClass = icon || icons[type] || icons.info;
         const color = colors[type] || colors.info;
-
         return `
             <div class="dqm-alert dqm-alert-${type}" style="border-left-color: ${color};">
                 <i class="fa-solid ${iconClass}" style="color: ${color};"></i>
@@ -191,7 +163,6 @@ window.DQM_AI_Helpers = {
             </div>
         `;
     },
-
     debounce(func, wait) {
         let timeout;
         return function executedFunction(...args) {
@@ -203,23 +174,19 @@ window.DQM_AI_Helpers = {
             timeout = setTimeout(later, wait);
         };
     },
-
     sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     },
-
     isTranslationNeeded(sourceLang, targetLang) {
         if (!targetLang || targetLang === 'en') return false;
         if (sourceLang === targetLang) return false;
         return true;
     },
-
     getCheckpointStats(checkpoints) {
         const total = checkpoints.length;
         const failed = checkpoints.filter(cp => cp.failed === true).length;
         const passed = total - failed;
         const failureRate = total > 0 ? Math.round((failed / total) * 100) : 0;
-
         return {
             total,
             failed,
@@ -228,4 +195,4 @@ window.DQM_AI_Helpers = {
             hasFailures: failed > 0
         };
     }
-};
+};

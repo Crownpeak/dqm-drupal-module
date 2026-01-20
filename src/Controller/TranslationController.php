@@ -31,18 +31,18 @@ class TranslationController extends ControllerBase
     );
   }
 
-  public function translateCheckpoints(Request $request)
-  {
+  public function translateCheckpoints(Request $request) {
     $config = $this->configFactory->get('dqm_drupal_module.settings');
     $openai_api_key = $config->get('openai_api_key');
     $openai_model = $config->get('openai_model') ?: 'gpt-4o-mini';
     $openai_base_url = $config->get('openai_base_url') ?: 'https://api.openai.com/v1';
     $reasoning_effort = $config->get('reasoning_effort') ?: 'medium';
+    $translation_mode = $request->request->get('translationMode') ?: 'fast';
 
     $checkpoints_json = $request->request->get('checkpoints');
     $target_lang = $request->request->get('targetLang') ?: 'en';
-    $batch_start = (int) $request->request->get('batchStart', 0);
-    $batch_size = (int) $request->request->get('batchSize', 10);
+    $batch_start = (int)$request->request->get('batchStart', 0);
+    $batch_size = (int)$request->request->get('batchSize', 10);
     $titles_only = $request->request->get('titlesOnly') === '1';
 
     if (empty($openai_api_key) || strlen($openai_api_key) < 10) {
@@ -105,6 +105,12 @@ class TranslationController extends ControllerBase
         $language_name,
         $target_lang
       );
+    } elseif ($translation_mode === 'full') {
+      $system_prompt = sprintf(
+        'You are a professional translator. Translate ALL text fields (name, description, category, topics) to %s (%s). CRITICAL: ALL text fields MUST be translated to the target language. Maintain technical accuracy, preserve HTML tags if present, and ensure translations are natural and idiomatic. Return JSON only with translated fields.',
+        $language_name,
+        $target_lang
+      );
     } else {
       $system_prompt = sprintf(
         'You are a fast translator. Quickly translate all text fields (name, description, category, topics) to %s (%s). Keep it concise. CRITICAL: ALL fields must be in the target language. Return JSON only.',
@@ -132,14 +138,14 @@ class TranslationController extends ControllerBase
 
     if ($titles_only) {
       $user_prompt = sprintf(
-        "Translate checkpoint names, categories, and topics to %s (skip description):\n%s\n\nReturn JSON array with same structure but with 'name', 'category', and 'topics' translated to %s. Leave 'description' empty or omit it. Preserve 'id' and 'failed' unchanged.",
+        "Translate checkpoint names and categories to %s (skip description):\n%s\n\nReturn JSON array with same structure but with 'name' and 'category' translated to %s. Leave 'description' empty or omit it.\nCRITICAL: Do NOT translate the 'topics' array. Keep 'topics' values exactly as they are in English (e.g. 'Accessibility', 'SEO'). Preserve 'id' and 'failed' unchanged.",
         $language_name,
         json_encode($checkpoint_data, JSON_PRETTY_PRINT),
         $language_name
       );
     } else {
       $user_prompt = sprintf(
-        "Translate these checkpoints to %s:\n%s\n\nReturn JSON array with same structure but with ALL text fields ('name', 'description', 'category', 'topics') fully translated to %s. Preserve the 'id' and 'failed' fields unchanged. Each checkpoint must have translated name, description, category, and topics array.",
+        "Translate these checkpoints to %s:\n%s\n\nReturn JSON array with same structure but with 'name', 'description', and 'category' fully translated to %s.\nCRITICAL: Do NOT translate the 'topics' array. Keep 'topics' values exactly as they are in English (e.g. 'Accessibility', 'SEO'). Preserve the 'id' and 'failed' fields unchanged. Each checkpoint must have translated name, description, category, and original English topics array.",
         $language_name,
         json_encode($checkpoint_data, JSON_PRETTY_PRINT),
         $language_name
@@ -156,12 +162,13 @@ class TranslationController extends ControllerBase
     $body_data = [
       'model' => $openai_model,
       'messages' => $messages,
+      'response_format' => ['type' => 'json_object'],
       'max_completion_tokens' => $titles_only ? 1024 : 2048,
     ];
 
     $is_reasoning_model = strpos($openai_model, 'o1-') === 0 || strpos($openai_model, 'o3-') === 0 || strpos($openai_model, 'gpt-5') === 0;
     if (!$is_reasoning_model) {
-      $body_data['temperature'] = $titles_only ? 0.1 : 0.1;
+      $body_data['temperature'] = 0.3; 
     }
 
     if (strpos($openai_model, 'gpt-5') === 0) {
@@ -218,12 +225,20 @@ class TranslationController extends ControllerBase
         $translation_text = $matches[1];
       } else {
         if (preg_match('/\[.+\]/s', $translation_text, $matches)) {
-          $translation_text = $matches[0];
+            $translation_text = $matches[0];
         }
       }
 
       $translation_text = trim($translation_text);
       $translated_data = json_decode($translation_text, TRUE);
+
+      if (is_array($translated_data) && isset($translated_data['checkpoints']) && is_array($translated_data['checkpoints'])) {
+          $translated_data = $translated_data['checkpoints'];
+      }
+      
+      if (is_array($translated_data) && isset($translated_data['translatedCheckpoints']) && is_array($translated_data['translatedCheckpoints'])) {
+          $translated_data = $translated_data['translatedCheckpoints'];
+      }
 
       if (json_last_error() !== JSON_ERROR_NONE || !is_array($translated_data)) {
         return new JsonResponse([
