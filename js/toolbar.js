@@ -1354,7 +1354,7 @@
         topicsDiv.className = 'dqm-modal-topics';
         topicsDiv.innerHTML = cp.topics.map(topic => {
           const badgeClassName = topicCounts[topic] ? topicCounts[topic].className : '';
-          return `<span class="badge ${badgeClassName}">${topic}</span>`;
+          return `<span class="badge ${badgeClassName}">${t(topic)}</span>`;
         }).join(' ');
         modal.appendChild(topicsDiv);
       }
